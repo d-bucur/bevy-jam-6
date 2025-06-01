@@ -1,11 +1,14 @@
-use bevy::asset::AssetMetaCheck;
-use bevy::ecs::query;
+use std::collections::VecDeque;
+
 use bevy::prelude::*;
 use rand::prelude::*;
+use bevy::asset::AssetMetaCheck;
 
-pub mod physics;
+mod physics;
+mod ui;
 
 use physics::*;
+use ui::*;
 
 const WIDTH: f32 = 300.;
 const HEIGHT: f32 = 300.;
@@ -63,6 +66,17 @@ struct StonksTrading {
     owned: u32,
     spent: u32,
     returns_total: i64,
+    price_history: VecDeque<u32>,
+}
+
+impl StonksTrading {
+    fn avg_buy_price(&self) -> u32 {
+        if self.owned != 0 {
+            self.spent / self.owned
+        } else {
+            0
+        }
+    }
 }
 
 #[derive(Resource)]
@@ -98,7 +112,10 @@ fn main() {
             meta_check: AssetMetaCheck::Never,
             ..default()
         }))
-        .add_systems(Startup, setup)
+        .add_systems(Startup, (
+            setup,
+            ui_config_gizmos,
+        ))
         .add_systems(FixedUpdate, (
             player_shooting,
             donnie_shooting,
@@ -111,6 +128,7 @@ fn main() {
             update_stonks_price,
             player_investing,
             ui_update,
+            ui_fancy_update,
         ).chain())
         .add_event::<CollisionEvent>()
         .add_event::<TraderChange>()
@@ -391,17 +409,15 @@ fn update_stonks_price(
         c[status as usize] += 1;
         c
     });
-    stonks.price_current = 5 * counts[TraderStatus::Neutral as usize]
+    let price_current = 5 * counts[TraderStatus::Neutral as usize]
         + 3 * counts[TraderStatus::Bearish as usize]
         + 7 * counts[TraderStatus::Bullish as usize];
+    stonks.price_current = price_current;
+
+    if stonks.price_history.len() > 300 {
+        stonks.price_history.pop_front();
+    }
+    stonks.price_history.push_back(price_current);
+
 }
 
-fn ui_update(
-    mut query: Query<&mut Text, With<StonksUiText>>,
-    stonks: Res<StonksTrading>,
-) {
-    let mut text = query.single_mut().unwrap();
-    let avg_buy_price: u32 = if stonks.owned != 0 {stonks.spent / stonks.owned} else {0};
-    **text = format!("Stonks price: {}\nStonks owned: {}\nAverage buy price: {}\nReturns: {}",
-        stonks.price_current, stonks.owned, avg_buy_price, stonks.returns_total);
-}
