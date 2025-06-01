@@ -1,4 +1,5 @@
 use bevy::asset::AssetMetaCheck;
+use bevy::ecs::query;
 use bevy::prelude::*;
 use rand::prelude::*;
 
@@ -53,6 +54,14 @@ struct Projectile {
     owner: Option<Entity>,
 }
 
+#[derive(Component)]
+struct StonksUiText;
+
+#[derive(Resource, Default)]
+struct GlobalStonks {
+    stonks_price: u64,
+}
+
 #[derive(Resource)]
 struct DonnieShootingLogic {
     shooting_timer: Timer,
@@ -96,10 +105,13 @@ fn main() {
             handle_collisions,
             tick_trader_timers,
             update_trader_status,
+            update_stonks,
+            ui_update,
         ).chain())
         .add_event::<CollisionEvent>()
         .add_event::<TraderChange>()
         .add_event::<SpawnProjectile>()
+        .init_resource::<GlobalStonks>()
         .init_resource::<DonnieShootingLogic>()
         .run();
 }
@@ -128,6 +140,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             EdgeBehavior::Wraparound,
         ));
     }
+
+    commands.spawn((
+        Text::new("Stonks go here"),
+        StonksUiText,
+    ));
 }
 
 fn move_entities(
@@ -345,4 +362,25 @@ fn spawn_projectiles(
             },
         }
     }
-    }
+}
+
+fn update_stonks(
+    mut stonks: ResMut<GlobalStonks>,
+    query: Query<&Trader>,
+) {
+    let counts = query.iter().map(|t| t.status).fold([0, 0, 0], |mut c, status| {
+        c[status as usize] += 1;
+        c
+    });
+    stonks.stonks_price = 5 * counts[TraderStatus::Neutral as usize]
+        + 3 * counts[TraderStatus::Bearish as usize]
+        + 7 * counts[TraderStatus::Bullish as usize];
+}
+
+fn ui_update(
+    mut query: Query<&mut Text, With<StonksUiText>>,
+    stonks: Res<GlobalStonks>,
+) {
+    let mut text = query.single_mut().unwrap();
+    **text = format!("Stonks: {}", stonks.stonks_price);
+}
