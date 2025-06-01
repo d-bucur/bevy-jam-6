@@ -37,7 +37,9 @@ jobs:
 
       - name: Build
         run: |
-          cargo build --release --target wasm32-unknown-unknown --features wasm_js
+          cargo build --release --target wasm32-unknown-unknown
+        env:
+          RUSTFLAGS: '--cfg getrandom_backend="wasm_js"' # compile breaks without this
 
       - name: Prepare package
         run: |
