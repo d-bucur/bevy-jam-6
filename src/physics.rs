@@ -6,7 +6,7 @@ pub struct Collider {
 }
 
 /// Does not displace bodies on collision
-// TODO use
+// TODO not used yet
 #[derive(Component)]
 #[require(Collider)]
 pub struct AreaTrigger;

@@ -37,7 +37,7 @@ jobs:
 
       - name: Build
         run: |
-          cargo build --release --target wasm32-unknown-unknown --features getrandom/wasm_js
+          cargo build --release --target wasm32-unknown-unknown --features wasm_js
 
       - name: Prepare package
         run: |

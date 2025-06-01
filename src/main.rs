@@ -27,6 +27,9 @@ struct TraderChange {
     entity: Entity,
 }
 
+#[derive(Component, Deref, DerefMut)]
+struct TraderStatusTimer(Timer);
+
 #[derive(Component)]
 enum Rumor {
     Tariff,
@@ -54,9 +57,11 @@ fn main() {
         .add_systems(Startup, setup)
         .add_systems(FixedUpdate, (
             player_shooting,
+            don_shooting,
             move_entities,
             check_collisions,
             handle_collisions,
+            tick_trader_timers,
             update_trader_status,
         ).chain())
         .add_event::<CollisionEvent>()
@@ -143,19 +148,27 @@ fn handle_collisions(
     asset_server: Res<AssetServer>,
 ) {
     for collision in collisions.read() {
-        if rumor.get(collision.entity1).is_ok() && trader.get(collision.entity2).is_ok() {
-            // TODO good way to not repeat code?
-            println!("TODO handle")
-        }
-        if rumor.get(collision.entity2).is_ok() && trader.get(collision.entity1).is_ok() {
-            let mut trader = trader.get_mut(collision.entity1).unwrap();
+        let entity1_is_trader = trader.get(collision.entity1).is_ok();
+        let entity2_is_trader = trader.get(collision.entity2).is_ok();
+
+        let mut check_rumor_vs_trader = |rumor_entity, trader_entity| {
+            let mut trader = trader.get_mut(trader_entity).unwrap();
             if trader.status == TraderStatus::Bullish {
-                continue;
+                return false;
             }
-            cmds.entity(collision.entity2).despawn();
+            cmds.entity(rumor_entity).despawn();
+            // TODO check rumor type
             trader.status = TraderStatus::Bullish;
-            trader_changes.write(TraderChange {entity: collision.entity1});
-            spawn_taco(&mut cmds, &asset_server, transform.get(collision.entity1).unwrap().translation.xy(), Vec2::new(5., 0.));
+            trader_changes.write(TraderChange {entity: trader_entity});
+            cmds.entity(trader_entity).insert(TraderStatusTimer(Timer::from_seconds(5., TimerMode::Once)));
+            spawn_taco(&mut cmds, &asset_server, transform.get(trader_entity).unwrap().translation.xy(), Vec2::new(5., 0.));
+            true
+        };
+        if rumor.get(collision.entity1).is_ok() && entity2_is_trader {
+            check_rumor_vs_trader(collision.entity1, collision.entity2);
+        }
+        if rumor.get(collision.entity2).is_ok() && entity1_is_trader {
+            check_rumor_vs_trader(collision.entity2, collision.entity1);   
         }
     }
 }
@@ -171,6 +184,11 @@ fn player_shooting(
     }
 }
 
+fn don_shooting() {
+    // TODO use timer
+    // normalize bullet types through event
+}
+
 fn update_trader_status(
     mut traders: Query<(&mut Sprite, &Trader)>,
     mut events: EventReader<TraderChange>,
@@ -183,6 +201,20 @@ fn update_trader_status(
             TraderStatus::Bearish => asset_server.load("bear-svgrepo-com.png"),
             TraderStatus::Bullish => asset_server.load("free-bull-svgrepo-com.png"),
         };
+    }
+}
+
+fn tick_trader_timers(
+    time: Res<Time>,
+    mut query: Query<(&mut TraderStatusTimer, &mut Trader, Entity)>,
+    mut trader_changes: EventWriter<TraderChange>,
+) {
+    for (mut timer, mut trader, entity) in &mut query {
+        if timer.tick(time.delta()).just_finished() {
+            trader.status = TraderStatus::Neutral;
+            trader_changes.write(TraderChange {entity});
+            // TODO despawn timer
+        }
     }
 }
 
