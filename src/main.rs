@@ -58,8 +58,11 @@ struct Projectile {
 struct StonksUiText;
 
 #[derive(Resource, Default)]
-struct GlobalStonks {
-    stonks_price: u64,
+struct StonksTrading {
+    price_current: u32,
+    owned: u32,
+    spent: u32,
+    returns_total: i64,
 }
 
 #[derive(Resource)]
@@ -105,13 +108,14 @@ fn main() {
             handle_collisions,
             tick_trader_timers,
             update_trader_status,
-            update_stonks,
+            update_stonks_price,
+            player_investing,
             ui_update,
         ).chain())
         .add_event::<CollisionEvent>()
         .add_event::<TraderChange>()
         .add_event::<SpawnProjectile>()
-        .init_resource::<GlobalStonks>()
+        .init_resource::<StonksTrading>()
         .init_resource::<DonnieShootingLogic>()
         .run();
 }
@@ -248,6 +252,21 @@ fn handle_collisions(
     }
 }
 
+fn player_investing(
+    key_input: Res<ButtonInput<KeyCode>>,
+    mut stonks: ResMut<StonksTrading>,
+) {
+    if key_input.pressed(KeyCode::KeyB) {
+        stonks.owned += 1;
+        stonks.spent += stonks.price_current;
+    }
+    if key_input.just_pressed(KeyCode::KeyS) {
+        stonks.returns_total += (stonks.owned * stonks.price_current) as i64 - stonks.spent as i64;
+        stonks.owned = 0;
+        stonks.spent = 0;
+    }
+}
+
 fn player_shooting(
     key_input: Res<ButtonInput<KeyCode>>,
     mut spawn_events: EventWriter<SpawnProjectile>,
@@ -364,23 +383,25 @@ fn spawn_projectiles(
     }
 }
 
-fn update_stonks(
-    mut stonks: ResMut<GlobalStonks>,
+fn update_stonks_price(
+    mut stonks: ResMut<StonksTrading>,
     query: Query<&Trader>,
 ) {
     let counts = query.iter().map(|t| t.status).fold([0, 0, 0], |mut c, status| {
         c[status as usize] += 1;
         c
     });
-    stonks.stonks_price = 5 * counts[TraderStatus::Neutral as usize]
+    stonks.price_current = 5 * counts[TraderStatus::Neutral as usize]
         + 3 * counts[TraderStatus::Bearish as usize]
         + 7 * counts[TraderStatus::Bullish as usize];
 }
 
 fn ui_update(
     mut query: Query<&mut Text, With<StonksUiText>>,
-    stonks: Res<GlobalStonks>,
+    stonks: Res<StonksTrading>,
 ) {
     let mut text = query.single_mut().unwrap();
-    **text = format!("Stonks: {}", stonks.stonks_price);
+    let avg_buy_price: u32 = if stonks.owned != 0 {stonks.spent / stonks.owned} else {0};
+    **text = format!("Stonks price: {}\nStonks owned: {}\nAverage buy price: {}\nReturns: {}",
+        stonks.price_current, stonks.owned, avg_buy_price, stonks.returns_total);
 }
