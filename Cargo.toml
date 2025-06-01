@@ -18,6 +18,7 @@ opt-level = 3
 [dependencies]
 bevy = "0.16"
 rand = "0.9.1"
+getrandom = { version = "0.3", features = ["wasm_js"] }
 
 # These lints may be important signals about code quality, but normal Bevy code
 # commonly triggers them and the CI workflow treats them as errors, so we've
