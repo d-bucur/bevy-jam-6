@@ -22,11 +22,6 @@ struct Trader {
     status: TraderStatus,
 }
 
-#[derive(Event)]
-struct TraderChange {
-    entity: Entity,
-}
-
 #[derive(Component, Deref, DerefMut)]
 struct TraderStatusTimer(Timer);
 
@@ -45,6 +40,18 @@ enum EdgeBehavior {
 #[derive(Component)]
 struct RandomMovement;
 
+#[derive(Event)]
+struct TraderChange {
+    entity: Entity,
+}
+
+#[derive(Event)]
+struct SpawnProjectile {
+    projectile_type: Rumor,
+    position: Vec2,
+    direction: Vec2,
+}
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(AssetPlugin {
@@ -58,6 +65,7 @@ fn main() {
         .add_systems(FixedUpdate, (
             player_shooting,
             don_shooting,
+            spawn_projectiles,
             move_entities,
             check_collisions,
             handle_collisions,
@@ -66,6 +74,7 @@ fn main() {
         ).chain())
         .add_event::<CollisionEvent>()
         .add_event::<TraderChange>()
+        .add_event::<SpawnProjectile>()
         .run();
 }
 
@@ -145,7 +154,7 @@ fn handle_collisions(
     mut trader: Query<&mut Trader>,
     transform: Query<&Transform>,
     mut cmds: Commands,
-    asset_server: Res<AssetServer>,
+    mut spawn_events: EventWriter<SpawnProjectile>,
 ) {
     for collision in collisions.read() {
         let entity1_is_trader = trader.get(collision.entity1).is_ok();
@@ -161,7 +170,10 @@ fn handle_collisions(
             trader.status = TraderStatus::Bullish;
             trader_changes.write(TraderChange {entity: trader_entity});
             cmds.entity(trader_entity).insert(TraderStatusTimer(Timer::from_seconds(5., TimerMode::Once)));
-            spawn_taco(&mut cmds, &asset_server, transform.get(trader_entity).unwrap().translation.xy(), Vec2::new(5., 0.));
+            let position = transform.get(trader_entity).unwrap().translation.xy();
+            spawn_events.write(SpawnProjectile { projectile_type: Rumor::Taco, position, direction: Vec2::new(5., 0.)});
+            spawn_events.write(SpawnProjectile { projectile_type: Rumor::Taco, position, direction: Vec2::new(-5., 0.)});
+            spawn_events.write(SpawnProjectile { projectile_type: Rumor::Taco, position, direction: Vec2::new(0., 5.)});
             true
         };
         if rumor.get(collision.entity1).is_ok() && entity2_is_trader {
@@ -175,12 +187,11 @@ fn handle_collisions(
 
 fn player_shooting(
     key_input: Res<ButtonInput<KeyCode>>,
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
+    mut spawn_events: EventWriter<SpawnProjectile>,
 ) {
     const START_POS: Vec2 = Vec2::new(0., -HEIGHT);
     if key_input.just_pressed(KeyCode::Space) {
-        spawn_taco(&mut commands, &asset_server, START_POS, Vec2::new(0., 5.));
+        spawn_events.write(SpawnProjectile { projectile_type: Rumor::Taco, position: START_POS, direction: Vec2::new(0., 5.)});
     }
 }
 
@@ -218,29 +229,34 @@ fn tick_trader_timers(
     }
 }
 
-// replace with an actual system?
-fn spawn_taco(
-    commands: &mut Commands,
-    asset_server: &Res<AssetServer>,
-    position: Vec2,
-    velocity: Vec2
+fn spawn_projectiles(
+    mut spawn_events: EventReader<SpawnProjectile>,
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
 ) {
-    commands.spawn((
-        Sprite {
-            image: asset_server.load("taco-svgrepo-com.png"),
-            custom_size: Some(vec2(50., 50.)),
-            ..Default::default()
-        },
-        Rumor::Taco,
-        Transform {
-            translation: (position, 0.).into(),
-            ..Default::default()
-        },
-        Collider {radius: 25.},
-        PhysicsBody {
-            velocity,
-            ..Default::default()
-        },
-        EdgeBehavior::Destroy,
-    ));
-}
+    for event in spawn_events.read() {
+        match event.projectile_type {
+            Rumor::Tariff => todo!(),
+            Rumor::Taco => {
+                commands.spawn((
+                    Sprite {
+                        image: asset_server.load("taco-svgrepo-com.png"),
+                        custom_size: Some(vec2(50., 50.)),
+                        ..Default::default()
+                    },
+                    Rumor::Taco,
+                    Transform {
+                        translation: (event.position, 0.).into(),
+                        ..Default::default()
+                    },
+                    Collider {radius: 25.},
+                    PhysicsBody {
+                        velocity: event.direction,
+                        ..Default::default()
+                    },
+                    EdgeBehavior::Destroy,
+                ));
+            },
+        }
+    }
+    }
