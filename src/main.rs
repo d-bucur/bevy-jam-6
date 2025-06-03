@@ -2,6 +2,7 @@ use std::collections::VecDeque;
 
 use bevy::asset::AssetMetaCheck;
 use bevy::prelude::*;
+use bevy::render::view::visibility;
 use bevy_inspector_egui::bevy_egui::EguiPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use rand::prelude::*;
@@ -40,6 +41,9 @@ struct TraderStatusTimer(Timer);
 #[require(Trader)]
 struct TraderRestTimer(Timer);
 
+#[derive(Component)]
+struct Donnie;
+
 #[derive(Component, PartialEq, Clone, Copy)]
 enum Rumor {
 	Tariff,
@@ -52,18 +56,27 @@ enum EdgeBehavior {
 	Destroy,
 }
 
+// TODO not used yet. Should change direction from time to time
 #[derive(Component)]
 struct RandomMovement;
-
-#[derive(Component, Default)]
-struct WalkAnimation {
-	// TODO progress without overflow
-	progress: f32,
-}
 
 #[derive(Component)]
 struct Projectile {
 	owner: Option<Entity>,
+}
+
+#[derive(Component)]
+#[require(Text2d)]
+struct OverheadText {
+	display_timer: Timer,
+}
+
+impl Default for OverheadText {
+	fn default() -> Self {
+		Self {
+			display_timer: Timer::from_seconds(0.1, TimerMode::Once),
+		}
+	}
 }
 
 #[derive(Component)]
@@ -114,6 +127,12 @@ struct SpawnProjectile {
 	owner: Option<Entity>, // TODO replace with relationship
 }
 
+#[derive(Event)]
+struct OverheadTextRequest {
+	attached_to: Entity,
+	text: Option<String>,
+}
+
 fn main() {
 	App::new()
 		.add_plugins(DefaultPlugins.set(AssetPlugin {
@@ -123,10 +142,10 @@ fn main() {
 			meta_check: AssetMetaCheck::Never,
 			..default()
 		}))
-		// .add_plugins(EguiPlugin {
-		// 	enable_multipass_for_primary_context: true,
-		// })
-		// .add_plugins(WorldInspectorPlugin::new())
+		.add_plugins(EguiPlugin {
+			enable_multipass_for_primary_context: true,
+		})
+		.add_plugins(WorldInspectorPlugin::new())
 		.add_systems(
 			Startup,
 			(setup_entities, ui_config_gizmos, window_setup).chain(),
@@ -137,6 +156,8 @@ fn main() {
 				player_shooting,
 				donnie_shooting,
 				spawn_projectiles,
+				process_text_requests,
+				update_texts,
 				move_entities,
 				animations,
 				y_sort,
@@ -154,6 +175,7 @@ fn main() {
 		.add_event::<CollisionEvent>()
 		.add_event::<TraderChange>()
 		.add_event::<SpawnProjectile>()
+		.add_event::<OverheadTextRequest>()
 		.init_resource::<StonksTrading>()
 		.init_resource::<DonnieShootingLogic>()
 		.insert_resource(ClearColor(Color::Srgba(Srgba::hex("5E5E5E").unwrap())))
@@ -168,10 +190,14 @@ fn setup_entities(
 ) {
 	commands.spawn(Camera2d);
 	let mut rng = rand::rng();
+
+	commands.spawn((Text::new("Stonks go here"), StonksUiText));
+
 	// Shadow mesh
 	let mesh_handle = meshes.add(Circle::new(25.));
 	let material_handle = materials.add(Color::hsva(0., 0., 0.2, 0.5));
 
+	// Traders
 	for _ in 0..TRADER_COUNT {
 		commands.spawn((
 			Sprite {
@@ -199,7 +225,6 @@ fn setup_entities(
 			},
 			RandomMovement,
 			EdgeBehavior::Wraparound,
-			WalkAnimation::default(),
 			Animation::<Transform> {
 				progress: 0.,
 				animation_speed: 10.,
@@ -211,15 +236,59 @@ fn setup_entities(
 				],
 			},
 			// Shadow
-			children![(
-				Mesh2d(mesh_handle.clone()),
-				MeshMaterial2d(material_handle.clone()),
-				Transform::from_xyz(0., 0., -2.).with_scale(Vec3::new(1., 0.5, 1.)),
-			)],
+			children![
+				(
+					Mesh2d(mesh_handle.clone()),
+					MeshMaterial2d(material_handle.clone()),
+					Transform::from_xyz(0., 0., -2.).with_scale(Vec3::new(1., 0.5, 1.)),
+				),
+				(Text2d::new("Quack!"), OverheadText::default()),
+			],
 		));
 	}
 
-	commands.spawn((Text::new("Stonks go here"), StonksUiText));
+	// Donnie
+	commands.spawn((
+		Sprite {
+			image: asset_server.load("monkey-svgrepo-com.png"),
+			custom_size: Some(vec2(50., 50.)),
+			anchor: bevy::sprite::Anchor::BottomCenter,
+			..Default::default()
+		},
+		Transform {
+			translation: Vec3::new(0., HEIGHT, 0.),
+			..Default::default()
+		},
+		Collider { radius: 25. },
+		// PhysicsBody {
+		// 	velocity: Vec2::new(
+		// 		rng.random_range(-TRADER_MAX_VELOCITY..TRADER_MAX_VELOCITY),
+		// 		rng.random_range(-TRADER_MAX_VELOCITY..TRADER_MAX_VELOCITY),
+		// 	),
+		// 	..Default::default()
+		// },
+		// RandomMovement,
+		EdgeBehavior::Wraparound,
+		Animation::<Transform> {
+			progress: 0.,
+			animation_speed: 10.,
+			animations: vec![
+				AnimValue::new(|t, _, n| t.scale.y = n, |p| (-p * 2.).cos() / 2. * 0.1 + 1.),
+				AnimValue::new(|t, o, n| t.rotate_z(-o + n), |p| p.sin() * 0.075),
+				AnimValue::new(|t, o, n| t.translation.y += n - o, |p| (-p * 2.).cos() * 5.),
+			],
+		},
+		Donnie,
+		// Shadow
+		children![
+			(
+				Mesh2d(mesh_handle.clone()),
+				MeshMaterial2d(material_handle.clone()),
+				Transform::from_xyz(0., 0., -2.).with_scale(Vec3::new(1., 0.5, 1.)),
+			),
+			(Text2d::new("TARIFFS!"), OverheadText::default())
+		],
+	));
 }
 
 fn window_setup(mut window: Single<&mut Window>) {
@@ -399,11 +468,14 @@ fn player_shooting(
 }
 
 fn donnie_shooting(
+	// TODO should just put in Donnie entity?
+	d: Query<(&Transform, Entity), With<Donnie>>,
 	mut shooting_logic: ResMut<DonnieShootingLogic>,
 	time: Res<Time>,
 	mut spawn_events: EventWriter<SpawnProjectile>,
+	mut overhead_events: EventWriter<OverheadTextRequest>,
 ) {
-	const START_POS: Vec2 = Vec2::new(0., HEIGHT); // change later
+	let (transform, entity) = d.single().unwrap();
 	if shooting_logic
 		.shooting_timer
 		.tick(time.delta())
@@ -411,9 +483,13 @@ fn donnie_shooting(
 	{
 		spawn_events.write(SpawnProjectile {
 			projectile_type: Rumor::Tariff,
-			position: START_POS,
+			position: transform.translation.xy(),
 			direction: Vec2::new(0., -5.),
 			owner: None,
+		});
+		overhead_events.write(OverheadTextRequest {
+			attached_to: entity,
+			text: None,
 		});
 	}
 }
@@ -421,14 +497,21 @@ fn donnie_shooting(
 fn update_trader_status(
 	mut traders: Query<(&mut Sprite, &Trader)>,
 	mut events: EventReader<TraderChange>,
+	mut overhead_events: EventWriter<OverheadTextRequest>,
 	asset_server: Res<AssetServer>,
 ) {
 	for event in events.read() {
 		let (mut sprite, trader) = traders.get_mut(event.entity).unwrap();
-		sprite.image = match trader.status {
-			TraderStatus::Neutral => asset_server.load("ducky.png"),
-			TraderStatus::Bearish => asset_server.load("bear-svgrepo-com.png"),
-			TraderStatus::Bullish => asset_server.load("bull-svgrepo-com.png"),
+		match trader.status {
+			TraderStatus::Neutral => {sprite.image = asset_server.load("ducky.png");},
+			TraderStatus::Bearish => {
+				sprite.image = asset_server.load("bear-svgrepo-com.png");
+				overhead_events.write(OverheadTextRequest { attached_to: event.entity, text: Some("O NO!".into())});
+			},
+			TraderStatus::Bullish => {
+				sprite.image = asset_server.load("bull-svgrepo-com.png");
+				overhead_events.write(OverheadTextRequest { attached_to: event.entity, text: Some("PHEW".into()) });
+			},
 		};
 	}
 }
@@ -488,6 +571,37 @@ fn spawn_projectiles(
 				animations: vec![AnimValue::new(|t, _, n| t.rotate_local_z(n), |_| 0.1)],
 			},
 		));
+	}
+}
+
+fn process_text_requests(
+	mut events: EventReader<OverheadTextRequest>,
+	parent_q: Query<&Children>,
+	mut text_q: Query<(&mut OverheadText, &mut Visibility, &mut Text2d)>,
+) {
+	for event in events.read() {
+		let Ok(children) = parent_q.get(event.attached_to) else {
+			warn!("OverheadTextRequest invalid");
+			continue;
+		};
+		for child in children {
+			let Ok((mut overhead, mut visibility, mut text)) = text_q.get_mut(*child) else {
+				continue;
+			};
+			*visibility = Visibility::Visible;
+			overhead.display_timer = Timer::from_seconds(1., TimerMode::Once);
+			if let Some(a) = &event.text {
+				text.0 = a.clone()
+			}
+		}
+	}
+}
+
+fn update_texts(mut q: Query<(&mut OverheadText, &Text2d, &mut Visibility)>, time: Res<Time>) {
+	for (mut overhead, _text, mut visibility) in q.iter_mut() {
+		if overhead.display_timer.tick(time.delta()).just_finished() {
+			*visibility = Visibility::Hidden;
+		}
 	}
 }
 
