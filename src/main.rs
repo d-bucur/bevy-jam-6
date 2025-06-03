@@ -2,6 +2,8 @@ use std::collections::VecDeque;
 
 use bevy::asset::AssetMetaCheck;
 use bevy::prelude::*;
+use bevy_inspector_egui::bevy_egui::EguiPlugin;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use rand::prelude::*;
 
 mod animations;
@@ -121,6 +123,10 @@ fn main() {
 			meta_check: AssetMetaCheck::Never,
 			..default()
 		}))
+		// .add_plugins(EguiPlugin {
+		// 	enable_multipass_for_primary_context: true,
+		// })
+		// .add_plugins(WorldInspectorPlugin::new())
 		.add_systems(
 			Startup,
 			(setup_entities, ui_config_gizmos, window_setup).chain(),
@@ -154,9 +160,17 @@ fn main() {
 		.run();
 }
 
-fn setup_entities(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup_entities(
+	mut commands: Commands,
+	asset_server: Res<AssetServer>,
+	mut meshes: ResMut<Assets<Mesh>>,
+	mut materials: ResMut<Assets<ColorMaterial>>,
+) {
 	commands.spawn(Camera2d);
 	let mut rng = rand::rng();
+	// Shadow mesh
+	let mesh_handle = meshes.add(Circle::new(25.));
+	let material_handle = materials.add(Color::hsva(0., 0., 0.2, 0.5));
 
 	for _ in 0..TRADER_COUNT {
 		commands.spawn((
@@ -196,6 +210,12 @@ fn setup_entities(mut commands: Commands, asset_server: Res<AssetServer>) {
 					AnimValue::new(|t, o, n| t.translation.y += n - o, |p| (-p * 2.).cos() * 5.),
 				],
 			},
+			// Shadow
+			children![(
+				Mesh2d(mesh_handle.clone()),
+				MeshMaterial2d(material_handle.clone()),
+				Transform::from_xyz(0., 0., -2.).with_scale(Vec3::new(1., 0.5, 1.)),
+			)],
 		));
 	}
 
@@ -408,7 +428,7 @@ fn update_trader_status(
 		sprite.image = match trader.status {
 			TraderStatus::Neutral => asset_server.load("ducky.png"),
 			TraderStatus::Bearish => asset_server.load("bear-svgrepo-com.png"),
-			TraderStatus::Bullish => asset_server.load("free-bull-svgrepo-com.png"),
+			TraderStatus::Bullish => asset_server.load("bull-svgrepo-com.png"),
 		};
 	}
 }
@@ -450,7 +470,7 @@ fn spawn_projectiles(
 				custom_size: Some(vec2(50., 50.)),
 				..Default::default()
 			},
-			Rumor::Tariff,
+			event.projectile_type,
 			Transform {
 				translation: (event.position, 0.).into(),
 				..Default::default()
