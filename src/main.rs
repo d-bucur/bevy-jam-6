@@ -7,10 +7,12 @@ use rand::prelude::*;
 mod physics;
 mod ui;
 mod config;
+mod animations;
 
 use physics::*;
 use ui::*;
 use config::*;
+use animations::*;
 
 #[derive(Default, PartialEq, Clone, Copy)]
 enum TraderStatus {
@@ -131,7 +133,7 @@ fn main() {
 				donnie_shooting,
 				spawn_projectiles,
 				move_entities,
-				projectiles_animation,
+				animations,
 				y_sort,
 				check_collisions,
 				handle_collisions,
@@ -182,6 +184,25 @@ fn setup_entities(mut commands: Commands, asset_server: Res<AssetServer>) {
 				RandomMovement,
 				EdgeBehavior::Wraparound,
 				WalkAnimation::default(),
+				Animation::<Transform> {
+					progress: 0.,
+					animation_speed: 10.,
+					animations: vec![
+						// TODO better to change custom anchor on sprite than transform
+						AnimValue::new(
+							|t, _, n| t.scale.y = n,
+							|p| (-p * 2.).cos() / 2. * 0.1 + 1.,
+						),
+						AnimValue::new(
+							|t, o, n| t.rotate_z(-o + n),
+							|p| p.sin() * 0.075,
+						),
+						AnimValue::new(
+							|t, o, n| t.translation.y += n - o,
+							|p| (-p * 2.).cos() * 5.,
+						),
+					],
+				}
 			));
 		}
 
@@ -247,39 +268,12 @@ fn move_entities(
 	}
 }
 
-fn projectiles_animation(
-	mut projectiles: Query<&mut Transform, With<Projectile>>,
-	// without required to avoid access conflict
-	mut walking: Query<(&mut Transform, &mut WalkAnimation), Without<Projectile>>,
+fn animations(
+	mut animations: Query<(&mut Transform, &mut Animation<Transform>)>,
 	time: Res<Time>,
 ) {
-	/// in radians per tick
-	const ROTATION_SPEED: f32 = 0.1;
-	for mut t in projectiles.iter_mut() {
-		t.rotate_local_z(ROTATION_SPEED);
-	}
-
-	// TODO better to change custom anchor on sprite than transform
-	// TODO refactor animations with custom function
-	const JUMP_HEIGHT: f32 = 5.;
-	const ROTATION_MAX: f32 = 0.075;
-	const ANIMATION_SPEED: f32 = 10.;
-
-	for (mut t, mut anim) in walking.iter_mut() {
-		let old_jump_value = (-anim.progress * 2.).cos();
-		let old_y = old_jump_value * JUMP_HEIGHT;
-		let old_rot = anim.progress.sin() * ROTATION_MAX;
-		// let old_scale = old_jump_value / 2.;
-
-		anim.progress += time.delta_secs() * ANIMATION_SPEED;
-		let new_jump_value = (-anim.progress * 2.).cos();
-		let new_y = new_jump_value * JUMP_HEIGHT;
-		let new_rot = anim.progress.sin() * ROTATION_MAX;
-		let new_scale = new_jump_value / 2.;
-
-		t.translation.y = t.translation.y - old_y + new_y;
-		t.rotate_z(-old_rot + new_rot);
-		t.scale.y = new_scale * 0.1 + 1.;
+	for (mut t, mut anim) in animations.iter_mut() {
+		anim.tick(time.delta_secs(), &mut t);
 	}
 }
 
@@ -459,51 +453,36 @@ fn spawn_projectiles(
 	asset_server: Res<AssetServer>,
 ) {
 	for event in spawn_events.read() {
-		match event.projectile_type {
-			// TODO refactor
-			Rumor::Tariff => {
-				commands.spawn((
-					Sprite {
-						image: asset_server.load("pile-of-poo-svgrepo-com.png"),
-						custom_size: Some(vec2(50., 50.)),
-						..Default::default()
-					},
-					Rumor::Tariff,
-					Transform {
-						translation: (event.position, 0.).into(),
-						..Default::default()
-					},
-					Collider { radius: 25. },
-					PhysicsBody {
-						velocity: event.direction,
-						..Default::default()
-					},
-					EdgeBehavior::Destroy,
-					Projectile { owner: event.owner },
-				));
+		commands.spawn((
+			Sprite {
+				image: asset_server.load(match event.projectile_type {
+						Rumor::Tariff => "pile-of-poo-svgrepo-com.png",
+						Rumor::Taco => "taco-svgrepo-com.png",
+					}),
+				custom_size: Some(vec2(50., 50.)),
+				..Default::default()
+			},
+			Rumor::Tariff,
+			Transform {
+				translation: (event.position, 0.).into(),
+				..Default::default()
+			},
+			Collider { radius: 25. },
+			PhysicsBody {
+				velocity: event.direction,
+				..Default::default()
+			},
+			EdgeBehavior::Destroy,
+			Projectile { owner: event.owner },
+			Animation::<Transform> {
+				progress: 0.,
+				animation_speed: 1.,
+				animations: vec![AnimValue::new(
+					|t, _, n| t.rotate_local_z(n),
+					|_| 0.1
+				)],
 			}
-			Rumor::Taco => {
-				commands.spawn((
-					Sprite {
-						image: asset_server.load("taco-svgrepo-com.png"),
-						custom_size: Some(vec2(50., 50.)),
-						..Default::default()
-					},
-					Rumor::Taco,
-					Transform {
-						translation: (event.position, 0.).into(),
-						..Default::default()
-					},
-					Collider { radius: 25. },
-					PhysicsBody {
-						velocity: event.direction,
-						..Default::default()
-					},
-					EdgeBehavior::Destroy,
-					Projectile { owner: event.owner },
-				));
-			}
-		}
+		));
 	}
 }
 
