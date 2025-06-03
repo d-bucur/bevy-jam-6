@@ -51,6 +51,12 @@ enum EdgeBehavior {
 #[derive(Component)]
 struct RandomMovement;
 
+#[derive(Component, Default)]
+struct WalkAnimation {
+	// TODO progress without overflow
+	progress: f32,
+}
+
 #[derive(Component)]
 struct Projectile {
 	owner: Option<Entity>,
@@ -114,7 +120,7 @@ fn main() {
 			..default()
 		}))
 		.add_systems(Startup, (
-			setup,
+			setup_entities,
 			ui_config_gizmos,
 			window_setup,
 		).chain())
@@ -125,6 +131,8 @@ fn main() {
 				donnie_shooting,
 				spawn_projectiles,
 				move_entities,
+				projectiles_animation,
+				y_sort,
 				check_collisions,
 				handle_collisions,
 				tick_trader_timers,
@@ -141,10 +149,11 @@ fn main() {
 		.add_event::<SpawnProjectile>()
 		.init_resource::<StonksTrading>()
 		.init_resource::<DonnieShootingLogic>()
+		.insert_resource(ClearColor(Color::Srgba(Srgba::hex("5E5E5E").unwrap())))
 		.run();
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup_entities(mut commands: Commands, asset_server: Res<AssetServer>) {
 	commands.spawn(Camera2d);
 	let mut rng = rand::rng();
 
@@ -153,6 +162,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 				Sprite {
 					image: asset_server.load("ducky.png"),
 					custom_size: Some(vec2(50., 50.)),
+					anchor: bevy::sprite::Anchor::BottomCenter,
 					..Default::default()
 				},
 				Transform {
@@ -166,11 +176,12 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 				Trader::default(),
 				Collider { radius: 25. },
 				PhysicsBody {
-					velocity: Vec2::new(rng.random_range(-3.0..3.0), rng.random_range(-3.0..3.0)),
+					velocity: Vec2::new(rng.random_range(-TRADER_MAX_VELOCITY..TRADER_MAX_VELOCITY), rng.random_range(-TRADER_MAX_VELOCITY..TRADER_MAX_VELOCITY)),
 					..Default::default()
 				},
 				RandomMovement,
 				EdgeBehavior::Wraparound,
+				WalkAnimation::default(),
 			));
 		}
 
@@ -190,13 +201,17 @@ fn move_entities(
 		&mut PhysicsBody,
 		&mut Transform,
 		Option<&EdgeBehavior>,
+		Option<&mut Sprite>
 	)>,
 	mut cmds: Commands,
 ) {
-	for (entity, body, mut transform, maybe_edge) in query.iter_mut() {
+	for (entity, body, mut transform, maybe_edge, mut maybe_sprite) in query.iter_mut() {
 		// transform.translation = ((transform.translation.xy() + body.velocity), 0.).into()
 		transform.translation.x += body.velocity.x;
 		transform.translation.y += body.velocity.y;
+		if let Some(mut s) = maybe_sprite {
+			s.flip_x = body.velocity.x < 0.
+		}
 
 		match maybe_edge {
 			Some(EdgeBehavior::Wraparound) => {
@@ -229,6 +244,50 @@ fn move_entities(
 			}
 			None => (),
 		}
+	}
+}
+
+fn projectiles_animation(
+	mut projectiles: Query<&mut Transform, With<Projectile>>,
+	// without required to avoid access conflict
+	mut walking: Query<(&mut Transform, &mut WalkAnimation), Without<Projectile>>,
+	time: Res<Time>,
+) {
+	/// in radians per tick
+	const ROTATION_SPEED: f32 = 0.1;
+	for mut t in projectiles.iter_mut() {
+		t.rotate_local_z(ROTATION_SPEED);
+	}
+
+	// TODO better to change custom anchor on sprite than transform
+	// TODO refactor animations with custom function
+	const JUMP_HEIGHT: f32 = 5.;
+	const ROTATION_MAX: f32 = 0.075;
+	const ANIMATION_SPEED: f32 = 10.;
+
+	for (mut t, mut anim) in walking.iter_mut() {
+		let old_jump_value = (-anim.progress * 2.).cos();
+		let old_y = old_jump_value * JUMP_HEIGHT;
+		let old_rot = anim.progress.sin() * ROTATION_MAX;
+		// let old_scale = old_jump_value / 2.;
+
+		anim.progress += time.delta_secs() * ANIMATION_SPEED;
+		let new_jump_value = (-anim.progress * 2.).cos();
+		let new_y = new_jump_value * JUMP_HEIGHT;
+		let new_rot = anim.progress.sin() * ROTATION_MAX;
+		let new_scale = new_jump_value / 2.;
+
+		t.translation.y = t.translation.y - old_y + new_y;
+		t.rotate_z(-old_rot + new_rot);
+		t.scale.y = new_scale * 0.1 + 1.;
+	}
+}
+
+fn y_sort(
+	mut q: Query<&mut Transform, With<Sprite>>
+) {
+	for mut t in q.iter_mut() {
+		t.translation.z = - t.translation.y;
 	}
 }
 
