@@ -4,15 +4,15 @@ use bevy::asset::AssetMetaCheck;
 use bevy::prelude::*;
 use rand::prelude::*;
 
+mod animations;
+mod config;
 mod physics;
 mod ui;
-mod config;
-mod animations;
 
+use animations::*;
+use config::*;
 use physics::*;
 use ui::*;
-use config::*;
-use animations::*;
 
 #[derive(Default, PartialEq, Clone, Copy)]
 enum TraderStatus {
@@ -121,11 +121,10 @@ fn main() {
 			meta_check: AssetMetaCheck::Never,
 			..default()
 		}))
-		.add_systems(Startup, (
-			setup_entities,
-			ui_config_gizmos,
-			window_setup,
-		).chain())
+		.add_systems(
+			Startup,
+			(setup_entities, ui_config_gizmos, window_setup).chain(),
+		)
 		.add_systems(
 			FixedUpdate,
 			(
@@ -160,60 +159,54 @@ fn setup_entities(mut commands: Commands, asset_server: Res<AssetServer>) {
 	let mut rng = rand::rng();
 
 	for _ in 0..TRADER_COUNT {
-			commands.spawn((
-				Sprite {
-					image: asset_server.load("ducky.png"),
-					custom_size: Some(vec2(50., 50.)),
-					anchor: bevy::sprite::Anchor::BottomCenter,
-					..Default::default()
-				},
-				Transform {
-					translation: Vec3::new(
-						rng.random_range(-WIDTH..WIDTH),
-						rng.random_range(-HEIGHT..HEIGHT),
-						0.,
-					),
-					..Default::default()
-				},
-				Trader::default(),
-				Collider { radius: 25. },
-				PhysicsBody {
-					velocity: Vec2::new(rng.random_range(-TRADER_MAX_VELOCITY..TRADER_MAX_VELOCITY), rng.random_range(-TRADER_MAX_VELOCITY..TRADER_MAX_VELOCITY)),
-					..Default::default()
-				},
-				RandomMovement,
-				EdgeBehavior::Wraparound,
-				WalkAnimation::default(),
-				Animation::<Transform> {
-					progress: 0.,
-					animation_speed: 10.,
-					animations: vec![
-						// TODO better to change custom anchor on sprite than transform
-						AnimValue::new(
-							|t, _, n| t.scale.y = n,
-							|p| (-p * 2.).cos() / 2. * 0.1 + 1.,
-						),
-						AnimValue::new(
-							|t, o, n| t.rotate_z(-o + n),
-							|p| p.sin() * 0.075,
-						),
-						AnimValue::new(
-							|t, o, n| t.translation.y += n - o,
-							|p| (-p * 2.).cos() * 5.,
-						),
-					],
-				}
-			));
-		}
+		commands.spawn((
+			Sprite {
+				image: asset_server.load("ducky.png"),
+				custom_size: Some(vec2(50., 50.)),
+				anchor: bevy::sprite::Anchor::BottomCenter,
+				..Default::default()
+			},
+			Transform {
+				translation: Vec3::new(
+					rng.random_range(-WIDTH..WIDTH),
+					rng.random_range(-HEIGHT..HEIGHT),
+					0.,
+				),
+				..Default::default()
+			},
+			Trader::default(),
+			Collider { radius: 25. },
+			PhysicsBody {
+				velocity: Vec2::new(
+					rng.random_range(-TRADER_MAX_VELOCITY..TRADER_MAX_VELOCITY),
+					rng.random_range(-TRADER_MAX_VELOCITY..TRADER_MAX_VELOCITY),
+				),
+				..Default::default()
+			},
+			RandomMovement,
+			EdgeBehavior::Wraparound,
+			WalkAnimation::default(),
+			Animation::<Transform> {
+				progress: 0.,
+				animation_speed: 10.,
+				animations: vec![
+					// TODO better to change custom anchor on sprite than transform
+					AnimValue::new(|t, _, n| t.scale.y = n, |p| (-p * 2.).cos() / 2. * 0.1 + 1.),
+					AnimValue::new(|t, o, n| t.rotate_z(-o + n), |p| p.sin() * 0.075),
+					AnimValue::new(|t, o, n| t.translation.y += n - o, |p| (-p * 2.).cos() * 5.),
+				],
+			},
+		));
+	}
 
 	commands.spawn((Text::new("Stonks go here"), StonksUiText));
 }
 
-fn window_setup(
-	mut window: Single<&mut Window>,
-) {
+fn window_setup(mut window: Single<&mut Window>) {
 	let scale_factor = window.resolution.scale_factor();
-	window.resolution.set(WIDTH * scale_factor, HEIGHT * scale_factor);
+	window
+		.resolution
+		.set(WIDTH * scale_factor, HEIGHT * scale_factor);
 }
 
 fn move_entities(
@@ -222,7 +215,7 @@ fn move_entities(
 		&mut PhysicsBody,
 		&mut Transform,
 		Option<&EdgeBehavior>,
-		Option<&mut Sprite>
+		Option<&mut Sprite>,
 	)>,
 	mut cmds: Commands,
 ) {
@@ -268,20 +261,15 @@ fn move_entities(
 	}
 }
 
-fn animations(
-	mut animations: Query<(&mut Transform, &mut Animation<Transform>)>,
-	time: Res<Time>,
-) {
+fn animations(mut animations: Query<(&mut Transform, &mut Animation<Transform>)>, time: Res<Time>) {
 	for (mut t, mut anim) in animations.iter_mut() {
 		anim.tick(time.delta_secs(), &mut t);
 	}
 }
 
-fn y_sort(
-	mut q: Query<&mut Transform, With<Sprite>>
-) {
+fn y_sort(mut q: Query<&mut Transform, With<Sprite>>) {
 	for mut t in q.iter_mut() {
-		t.translation.z = - t.translation.y;
+		t.translation.z = -t.translation.y;
 	}
 }
 
@@ -456,9 +444,9 @@ fn spawn_projectiles(
 		commands.spawn((
 			Sprite {
 				image: asset_server.load(match event.projectile_type {
-						Rumor::Tariff => "pile-of-poo-svgrepo-com.png",
-						Rumor::Taco => "taco-svgrepo-com.png",
-					}),
+					Rumor::Tariff => "pile-of-poo-svgrepo-com.png",
+					Rumor::Taco => "taco-svgrepo-com.png",
+				}),
 				custom_size: Some(vec2(50., 50.)),
 				..Default::default()
 			},
@@ -477,11 +465,8 @@ fn spawn_projectiles(
 			Animation::<Transform> {
 				progress: 0.,
 				animation_speed: 1.,
-				animations: vec![AnimValue::new(
-					|t, _, n| t.rotate_local_z(n),
-					|_| 0.1
-				)],
-			}
+				animations: vec![AnimValue::new(|t, _, n| t.rotate_local_z(n), |_| 0.1)],
+			},
 		));
 	}
 }

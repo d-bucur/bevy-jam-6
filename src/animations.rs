@@ -8,11 +8,10 @@ pub struct Animation<T> {
 }
 
 impl<T> Animation<T> {
-
 	pub fn tick(&mut self, delta: f32, t: &mut T) {
 		for anim in self.animations.iter() {
 			// could cache prev_value
-			let prev_value = (anim.val_f)(self.progress); 
+			let prev_value = (anim.val_f)(self.progress);
 			let new_value = (anim.val_f)(self.progress + delta * self.animation_speed);
 			(anim.setter_f)(t, prev_value, new_value);
 		}
