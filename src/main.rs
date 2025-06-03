@@ -6,12 +6,11 @@ use rand::prelude::*;
 
 mod physics;
 mod ui;
+mod config;
 
 use physics::*;
 use ui::*;
-
-const WIDTH: f32 = 300.;
-const HEIGHT: f32 = 300.;
+use config::*;
 
 #[derive(Default, PartialEq, Clone, Copy)]
 enum TraderStatus {
@@ -114,7 +113,11 @@ fn main() {
 			meta_check: AssetMetaCheck::Never,
 			..default()
 		}))
-		.add_systems(Startup, (setup, ui_config_gizmos))
+		.add_systems(Startup, (
+			setup,
+			ui_config_gizmos,
+			window_setup,
+		).chain())
 		.add_systems(
 			FixedUpdate,
 			(
@@ -144,33 +147,41 @@ fn main() {
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 	commands.spawn(Camera2d);
 	let mut rng = rand::rng();
-	for _ in 0..10 {
-		commands.spawn((
-			Sprite {
-				image: asset_server.load("ducky.png"),
-				custom_size: Some(vec2(50., 50.)),
-				..Default::default()
-			},
-			Transform {
-				translation: Vec3::new(
-					rng.random_range(-WIDTH..WIDTH),
-					rng.random_range(-HEIGHT..HEIGHT),
-					0.,
-				),
-				..Default::default()
-			},
-			Trader::default(),
-			Collider { radius: 25. },
-			PhysicsBody {
-				velocity: Vec2::new(rng.random_range(-3.0..3.0), rng.random_range(-3.0..3.0)),
-				..Default::default()
-			},
-			RandomMovement,
-			EdgeBehavior::Wraparound,
-		));
-	}
+
+	for _ in 0..TRADER_COUNT {
+			commands.spawn((
+				Sprite {
+					image: asset_server.load("ducky.png"),
+					custom_size: Some(vec2(50., 50.)),
+					..Default::default()
+				},
+				Transform {
+					translation: Vec3::new(
+						rng.random_range(-WIDTH..WIDTH),
+						rng.random_range(-HEIGHT..HEIGHT),
+						0.,
+					),
+					..Default::default()
+				},
+				Trader::default(),
+				Collider { radius: 25. },
+				PhysicsBody {
+					velocity: Vec2::new(rng.random_range(-3.0..3.0), rng.random_range(-3.0..3.0)),
+					..Default::default()
+				},
+				RandomMovement,
+				EdgeBehavior::Wraparound,
+			));
+		}
 
 	commands.spawn((Text::new("Stonks go here"), StonksUiText));
+}
+
+fn window_setup(
+	mut window: Single<&mut Window>,
+) {
+	let scale_factor = window.resolution.scale_factor();
+	window.resolution.set(WIDTH * scale_factor, HEIGHT * scale_factor);
 }
 
 fn move_entities(
@@ -445,9 +456,9 @@ fn update_stonks_price(mut stonks: ResMut<StonksTrading>, query: Query<&Trader>)
 			c[status as usize] += 1;
 			c
 		});
-	let price_current = 5 * counts[TraderStatus::Neutral as usize]
-		+ 3 * counts[TraderStatus::Bearish as usize]
-		+ 7 * counts[TraderStatus::Bullish as usize];
+	let price_current = STONKS_PER_NEUTRAL * counts[TraderStatus::Neutral as usize]
+		+ STONKS_PER_BEARISH * counts[TraderStatus::Bearish as usize]
+		+ STONKS_PER_BULLISH * counts[TraderStatus::Bullish as usize];
 	stonks.price_current = price_current;
 
 	if stonks.price_history.len() > 300 {

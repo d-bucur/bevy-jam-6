@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{HEIGHT, StonksTrading, StonksUiText, WIDTH};
+use crate::{config::{STONKS_PER_BEARISH, STONKS_PER_BULLISH, TRADER_COUNT}, StonksTrading, StonksUiText, HEIGHT, WIDTH};
 
 pub fn ui_update(mut query: Query<&mut Text, With<StonksUiText>>, stonks: Res<StonksTrading>) {
 	let mut text = query.single_mut().unwrap();
@@ -25,8 +25,8 @@ pub fn ui_fancy_update(mut gizmos: Gizmos, stonks: Res<StonksTrading>) {
 	const BAR_WIDTH: f32 = 2.;
 	const BAR_OFFSET: Vec2 = Vec2::new(-WIDTH, -HEIGHT);
 	const HUE_MAX: f32 = 123.;
-	const MIN_PRICE: f32 = 30.;
-	const MAX_PRICE: f32 = 70.;
+	let min_price: f32 = (TRADER_COUNT * STONKS_PER_BEARISH) as f32;
+	let max_price: f32 = (TRADER_COUNT * STONKS_PER_BULLISH) as f32;
 
 	// average buy indicator
 	// should use custom style
@@ -45,7 +45,7 @@ pub fn ui_fancy_update(mut gizmos: Gizmos, stonks: Res<StonksTrading>) {
 		(
 			BAR_OFFSET + Vec2::new(i as f32 * BAR_WIDTH, v as f32 * BAR_HEIGHT),
 			Hsla::new(
-				(v as f32 - MIN_PRICE) / (MAX_PRICE - MIN_PRICE) * HUE_MAX,
+				(v as f32 - min_price) / (max_price - min_price) * HUE_MAX,
 				0.7,
 				0.5,
 				1.,
