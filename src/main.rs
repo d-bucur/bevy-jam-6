@@ -9,11 +9,13 @@ use rand::prelude::*;
 
 mod animations;
 mod config;
+mod dialogue;
 mod physics;
 mod ui;
 
 use animations::*;
 use config::*;
+use dialogue::*;
 use physics::*;
 use ui::*;
 
@@ -131,6 +133,7 @@ struct SpawnProjectile {
 struct OverheadTextRequest {
 	attached_to: Entity,
 	text: Option<String>,
+	duration_sec: Option<f32>,
 }
 
 fn main() {
@@ -142,10 +145,10 @@ fn main() {
 			meta_check: AssetMetaCheck::Never,
 			..default()
 		}))
-		.add_plugins(EguiPlugin {
-			enable_multipass_for_primary_context: true,
-		})
-		.add_plugins(WorldInspectorPlugin::new())
+		// .add_plugins(EguiPlugin {
+		// 	enable_multipass_for_primary_context: true,
+		// })
+		// .add_plugins(WorldInspectorPlugin::new())
 		.add_systems(
 			Startup,
 			(setup_entities, ui_config_gizmos, window_setup).chain(),
@@ -485,11 +488,12 @@ fn donnie_shooting(
 			projectile_type: Rumor::Tariff,
 			position: transform.translation.xy(),
 			direction: Vec2::new(0., -5.),
-			owner: None,
+			owner: Some(entity),
 		});
 		overhead_events.write(OverheadTextRequest {
 			attached_to: entity,
-			text: None,
+			text: Some(random_tariff()),
+			duration_sec: Some(1.5),
 		});
 	}
 }
@@ -500,18 +504,35 @@ fn update_trader_status(
 	mut overhead_events: EventWriter<OverheadTextRequest>,
 	asset_server: Res<AssetServer>,
 ) {
+	let mut rng = rand::rng();
+	const TEXT_CHANCE: f64 = 0.5;
+
 	for event in events.read() {
 		let (mut sprite, trader) = traders.get_mut(event.entity).unwrap();
 		match trader.status {
-			TraderStatus::Neutral => {sprite.image = asset_server.load("ducky.png");},
+			TraderStatus::Neutral => {
+				sprite.image = asset_server.load("ducky.png");
+			}
 			TraderStatus::Bearish => {
 				sprite.image = asset_server.load("bear-svgrepo-com.png");
-				overhead_events.write(OverheadTextRequest { attached_to: event.entity, text: Some("O NO!".into())});
-			},
+				if rng.random_bool(TEXT_CHANCE) {
+					overhead_events.write(OverheadTextRequest {
+						attached_to: event.entity,
+						text: Some(random_dialogue(&bearish).to_string()),
+						duration_sec: Some(1.),
+					});
+				}
+			}
 			TraderStatus::Bullish => {
 				sprite.image = asset_server.load("bull-svgrepo-com.png");
-				overhead_events.write(OverheadTextRequest { attached_to: event.entity, text: Some("PHEW".into()) });
-			},
+				if rng.random_bool(TEXT_CHANCE) {
+					overhead_events.write(OverheadTextRequest {
+						attached_to: event.entity,
+						text: Some(random_dialogue(&bullish).to_string()),
+						duration_sec: Some(1.),
+					});
+				}
+			}
 		};
 	}
 }
@@ -589,7 +610,7 @@ fn process_text_requests(
 				continue;
 			};
 			*visibility = Visibility::Visible;
-			overhead.display_timer = Timer::from_seconds(1., TimerMode::Once);
+			overhead.display_timer = Timer::from_seconds(event.duration_sec.unwrap_or(1.), TimerMode::Once);
 			if let Some(a) = &event.text {
 				text.0 = a.clone()
 			}
@@ -618,7 +639,7 @@ fn update_stonks_price(mut stonks: ResMut<StonksTrading>, query: Query<&Trader>)
 		+ STONKS_PER_BULLISH * counts[TraderStatus::Bullish as usize];
 	stonks.price_current = price_current;
 
-	if stonks.price_history.len() > 300 {
+	if stonks.price_history.len() > STONKS_DATA_POINTS as usize {
 		stonks.price_history.pop_front();
 	}
 	stonks.price_history.push_back(price_current);

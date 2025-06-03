@@ -1,8 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-	HEIGHT, StonksTrading, StonksUiText, WIDTH,
-	config::{STONKS_PER_BEARISH, STONKS_PER_BULLISH, TRADER_COUNT},
+	config::{STONKS_DATA_POINTS, STONKS_PER_BEARISH, STONKS_PER_BULLISH, TRADER_COUNT}, StonksTrading, StonksUiText, HEIGHT, WIDTH
 };
 
 pub fn ui_update(mut query: Query<&mut Text, With<StonksUiText>>, stonks: Res<StonksTrading>) {
@@ -25,7 +24,7 @@ pub fn ui_fancy_update(mut gizmos: Gizmos, stonks: Res<StonksTrading>) {
 	// TODO make nice chart
 	use bevy::color::palettes::css::*;
 	const BAR_HEIGHT: f32 = 2.;
-	const BAR_WIDTH: f32 = 2.;
+	const BAR_WIDTH: f32 = WIDTH / STONKS_DATA_POINTS as f32;
 	const BAR_OFFSET: Vec2 = Vec2::new(-WIDTH, -HEIGHT);
 	const HUE_MAX: f32 = 123.;
 	let min_price: f32 = (TRADER_COUNT * STONKS_PER_BEARISH) as f32;

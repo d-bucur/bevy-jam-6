@@ -6,3 +6,4 @@ pub const TRADER_MAX_VELOCITY: f32 = 2.0;
 pub const STONKS_PER_BEARISH: u32 = 3;
 pub const STONKS_PER_NEUTRAL: u32 = 5;
 pub const STONKS_PER_BULLISH: u32 = 7;
+pub const STONKS_DATA_POINTS: u32 = 300;
