@@ -1,3 +1,5 @@
+use std::ops::DerefMut;
+
 use crate::*;
 
 #[derive(Component)]
@@ -6,9 +8,27 @@ pub enum EdgeBehavior {
 	Destroy,
 }
 
-// TODO not used yet. Should change direction from time to time
-#[derive(Component)]
-pub struct RandomMovement;
+#[derive(Component, Clone)]
+pub enum RandomMovement {
+	Moving(Timer),
+	Idle(Timer),
+}
+
+impl Default for RandomMovement {
+	fn default() -> Self {
+		if rand::random_bool((IDLE_TIME / MOVEMENT_TIME) as f64) {
+			Self::Idle(Timer::from_seconds(
+				rand::random_range(0.0..IDLE_TIME),
+				TimerMode::Once,
+			))
+		} else {
+			Self::Moving(Timer::from_seconds(
+				rand::random_range(0.0..MOVEMENT_TIME),
+				TimerMode::Once,
+			))
+		}
+	}
+}
 
 pub fn move_entities(
 	mut query: Query<(
@@ -74,5 +94,29 @@ pub fn animations(
 pub fn y_sort(mut q: Query<&mut Transform, With<Sprite>>) {
 	for mut t in q.iter_mut() {
 		t.translation.z = -t.translation.y;
+	}
+}
+
+pub fn handle_random_movement(
+	mut q: Query<(&mut PhysicsBody, &mut RandomMovement)>,
+	time: Res<Time>,
+) {
+	for (mut body, mut random_movement) in q.iter_mut() {
+		match random_movement.deref_mut() {
+			RandomMovement::Moving(timer) => {
+				if timer.tick(time.delta()).just_finished() {
+					*random_movement =
+						RandomMovement::Idle(Timer::from_seconds(IDLE_TIME, TimerMode::Once));
+					body.velocity = Vec2::ZERO;
+				}
+			}
+			RandomMovement::Idle(timer) => {
+				if timer.tick(time.delta()).just_finished() {
+					*random_movement =
+						RandomMovement::Moving(Timer::from_seconds(MOVEMENT_TIME, TimerMode::Once));
+					body.velocity = get_trader_random_velocity();
+				}
+			}
+		};
 	}
 }

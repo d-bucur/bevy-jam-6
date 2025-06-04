@@ -66,6 +66,7 @@ fn main() {
 				spawn_projectiles,
 				process_text_requests,
 				update_texts,
+				handle_random_movement,
 				move_entities,
 				animations,
 				y_sort,
@@ -130,13 +131,10 @@ fn setup_entities(
 				offset: Vec2::new(0., 14.),
 			},
 			PhysicsBody {
-				velocity: Vec2::new(
-					rng.random_range(-TRADER_MAX_VELOCITY..TRADER_MAX_VELOCITY),
-					rng.random_range(-TRADER_MAX_VELOCITY..TRADER_MAX_VELOCITY),
-				),
+				velocity: get_trader_random_velocity(),
 				..Default::default()
 			},
-			RandomMovement,
+			RandomMovement::default(),
 			EdgeBehavior::Wraparound,
 			Animation::<Transform> {
 				progress: 0.,
