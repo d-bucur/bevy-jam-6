@@ -1,6 +1,6 @@
 use crate::*;
 
-pub const bullish: [&str; 5] = [
+pub const BULLISH: [&str; 5] = [
 	"PHEW",
 	"YAY",
 	"STONKS UP",
@@ -8,7 +8,7 @@ pub const bullish: [&str; 5] = [
 	"TACOed",
 ];
 
-pub const bearish: [&str; 7] = [
+pub const BEARISH: [&str; 7] = [
 	"O NO",
 	"MEIN GOTT",
 	"O NEIN",
@@ -18,7 +18,7 @@ pub const bearish: [&str; 7] = [
 	"WTF",
 ];
 
-pub const tariff_values: [&str; 10] = [
+pub const TARIFF_VALUES: [&str; 10] = [
 	"20",
 	"42",
 	"69",
@@ -31,7 +31,7 @@ pub const tariff_values: [&str; 10] = [
 	"INFINITY",
 ];
 
-pub const tariff_targets: [&str; 9] = [
+pub const TARIFF_TARGETS: [&str; 9] = [
 	"STEEL",
 	"ELECTRONICS",
 	"THIS GAME",
@@ -51,8 +51,8 @@ pub fn random_dialogue(a: &[&'static str]) -> &'static str {
 
 pub fn random_tariff() -> String {
 	let mut rng = rand::rng();
-	let value = tariff_values[rng.random_range(..tariff_values.len())];
-	let target = tariff_targets[rng.random_range(..tariff_targets.len())];
+	let value = TARIFF_VALUES[rng.random_range(..TARIFF_VALUES.len())];
+	let target = TARIFF_TARGETS[rng.random_range(..TARIFF_TARGETS.len())];
 	format!("{}% TARIFFS ON {}", value, target)
 }
 

@@ -57,18 +57,22 @@ pub fn player_shooting(
 	mut gizmos: Gizmos,
 	window: Single<&Window>,
 	camera: Single<(&Camera, &GlobalTransform)>,
+	mut stats: ResMut<GameStats>,
 ) {
 	const START_POS: Vec2 = Vec2::new(0., -HEIGHT);
 
+	// draw shooting line
 	let Some(cursor_pos) = window
 		.cursor_position()
 		.and_then(|p| camera.0.viewport_to_world_2d(camera.1, p).ok())
 	else {
 		return;
 	};
-
 	gizmos.arrow_2d(START_POS, cursor_pos, bevy::color::palettes::css::GREEN);
 
+	if stats.tacos_remaining == 0 {
+		return;
+	}
 	if key_button.just_pressed(KeyCode::Space) || mouse_button.just_pressed(MouseButton::Left) {
 		spawn_events.write(SpawnProjectile {
 			projectile_type: Rumor::Taco,
@@ -76,6 +80,7 @@ pub fn player_shooting(
 			direction: (cursor_pos - START_POS).normalize() * PROJECTILE_SPEED,
 			owner: None,
 		});
+		stats.tacos_remaining -= 1;
 	}
 }
 
@@ -154,6 +159,6 @@ pub fn spawn_projectiles(
 				animations: vec![AnimValue::new(|t, _, n| t.rotate_local_z(n), |_| 0.1)],
 			},
 		));
-		stats.tacos_launched += 1;
+		stats.total_projectiles_launched += 1;
 	}
 }

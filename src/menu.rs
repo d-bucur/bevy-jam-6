@@ -1,10 +1,8 @@
 use std::borrow::Cow;
 
-use crate::Val::*;
+use crate::*;
 use bevy::color::palettes::basic::*;
-use bevy::prelude::*;
-
-use crate::game::GameState;
+use crate::game_states::GameState;
 
 const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
 const HOVERED_BUTTON: Color = Color::srgb(0.25, 0.25, 0.25);
@@ -45,12 +43,12 @@ pub fn make_ui_root(name: impl Into<Cow<'static, str>>) -> impl Bundle {
 		Name::new(name),
 		Node {
 			position_type: PositionType::Absolute,
-			width: Percent(100.0),
-			height: Percent(100.0),
+			width: Val::Percent(100.0),
+			height: Val::Percent(100.0),
 			align_items: AlignItems::Center,
 			justify_content: JustifyContent::Center,
 			flex_direction: FlexDirection::Column,
-			row_gap: Px(20.0),
+			row_gap: Val::Px(20.0),
 			..default()
 		},
 		// Don't block picking events for other UI roots.
@@ -58,7 +56,7 @@ pub fn make_ui_root(name: impl Into<Cow<'static, str>>) -> impl Bundle {
 	)
 }
 
-fn change_state(
+pub fn change_state(
 	new_state: GameState,
 ) -> impl Fn(Trigger<'_, Pointer<Click>>, ResMut<'_, NextState<GameState>>) {
 	move |_: Trigger<Pointer<Click>>, mut next_state: ResMut<NextState<GameState>>| {
@@ -66,7 +64,7 @@ fn change_state(
 	}
 }
 
-fn make_button(text: impl Into<String>) -> impl Bundle {
+pub fn make_button(text: impl Into<String>) -> impl Bundle {
 	(
 		Node {
 			width: Val::Percent(100.0),

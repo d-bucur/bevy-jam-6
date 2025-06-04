@@ -1,9 +1,38 @@
-use bevy::prelude::*;
+use crate::*;
+
+#[derive(Component)]
+pub struct GameStatsText;
 
 use crate::{
 	HEIGHT, StonksTrading, StonksUiText, WIDTH,
 	config::{STONKS_DATA_POINTS, STONKS_PER_BEARISH, STONKS_PER_BULLISH, TRADER_COUNT},
 };
+
+pub fn setup_game_ui(mut commands: Commands) {
+	commands
+		.spawn((
+			Name::new("In game UI"),
+			Node {
+				position_type: PositionType::Absolute,
+				width: Val::Percent(100.0),
+				height: Val::Percent(100.0),
+				align_items: AlignItems::Start,
+				justify_content: JustifyContent::Start,
+				flex_direction: FlexDirection::Column,
+				row_gap: Val::Px(20.0),
+				..default()
+			},
+			// Don't block picking events for other UI roots.
+			Pickable::IGNORE,
+			GlobalZIndex(2),
+			StateScoped(GameState::Game),
+			StateScoped(InGameState::Playing),
+		))
+		.with_children(|parent| {
+			parent.spawn((Text::new("Stonks go here"), StonksUiText));
+			parent.spawn((Text::new("Stats go here"), GameStatsText));
+		});
+}
 
 pub fn ui_update(mut query: Query<&mut Text, With<StonksUiText>>, stonks: Res<StonksTrading>) {
 	let mut text = query.single_mut().unwrap();
@@ -77,3 +106,48 @@ pub fn ui_fancy_update(mut gizmos: Gizmos, stonks: Res<StonksTrading>) {
 	//     .map(|t| (t, TEAL.mix(&HOT_PINK, (t + 300.0) / 600.0)));
 	// gizmos.curve_gradient_2d(curve, times_and_colors);
 }
+
+pub fn ui_update_game_stats(
+	mut query: Query<&mut Text, With<GameStatsText>>,
+	stats: Res<GameStats>,
+) {
+	let mut text = query.single_mut().unwrap();
+	**text = format!(
+		"Time: {}\nTacos: {}",
+		stats.time_remaining.remaining_secs(),
+		stats.tacos_remaining,
+	);
+}
+
+pub fn ui_setup_gameover_screen(mut commands: Commands, stonks: Res<StonksTrading>) {
+	print!("Setting up game over screen...");
+	commands
+		.spawn((
+			Name::new("Game over UI"),
+			Node {
+				position_type: PositionType::Absolute,
+				width: Val::Percent(100.0),
+				height: Val::Percent(100.0),
+				align_items: AlignItems::Center,
+				justify_content: JustifyContent::Center,
+				flex_direction: FlexDirection::Column,
+				row_gap: Val::Px(20.0),
+				..default()
+			},
+			// Don't block picking events for other UI roots.
+			Pickable::IGNORE,
+			GlobalZIndex(2),
+			StateScoped(GameState::Game),
+			StateScoped(InGameState::GameOver),
+		))
+		.with_children(|parent| {
+			parent.spawn(Text::new(format!("Profit: {}", stonks.returns_total)));
+			parent
+				.spawn(make_button("Play"))
+				.observe(change_state(GameState::Game));
+			parent
+				.spawn(make_button("Main Menu"))
+				.observe(change_state(GameState::Menu));
+		});
+}
+	

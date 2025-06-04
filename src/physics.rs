@@ -16,7 +16,7 @@ pub struct AreaTrigger;
 #[require(Transform)]
 pub struct PhysicsBody {
 	pub velocity: Vec2,
-	pub accel: Vec2,
+	// pub accel: Vec2,
 }
 
 #[derive(Event)]
@@ -36,7 +36,7 @@ pub fn check_collisions(
 	mut collisions: EventWriter<CollisionEvent>,
 ) {
 	let mut combinations = query.iter_combinations_mut();
-	while let Some([mut e1, mut e2]) = combinations.fetch_next() {
+	while let Some([e1, e2]) = combinations.fetch_next() {
 		let axis = (e1.2.translation.xy() + e1.1.offset) - (e2.2.translation.xy() + e2.1.offset);
 		if axis.length() < e1.1.radius + e2.1.radius {
 			// handle collision

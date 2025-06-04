@@ -50,7 +50,7 @@ pub fn update_trader_status(
 				if rng.random_bool(TEXT_CHANCE) {
 					overhead_events.write(OverheadTextRequest {
 						attached_to: event.entity,
-						text: Some(random_dialogue(&bearish).to_string()),
+						text: Some(random_dialogue(&BEARISH).to_string()),
 						duration_sec: Some(1.),
 					});
 				}
@@ -60,7 +60,7 @@ pub fn update_trader_status(
 				if rng.random_bool(TEXT_CHANCE) {
 					overhead_events.write(OverheadTextRequest {
 						attached_to: event.entity,
-						text: Some(random_dialogue(&bullish).to_string()),
+						text: Some(random_dialogue(&BULLISH).to_string()),
 						duration_sec: Some(1.),
 					});
 				}

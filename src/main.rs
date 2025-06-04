@@ -9,7 +9,7 @@ use rand::prelude::*;
 mod animations;
 mod config;
 mod dialogue;
-mod game;
+mod game_states;
 mod menu;
 mod movement;
 mod physics;
@@ -21,7 +21,7 @@ mod ui;
 use animations::*;
 use config::*;
 use dialogue::*;
-use game::*;
+use game_states::*;
 use menu::*;
 use movement::*;
 use physics::*;
@@ -33,9 +33,21 @@ use ui::*;
 #[derive(Component)]
 struct Donnie;
 
-#[derive(Resource, Default)]
+#[derive(Resource)]
 struct GameStats {
-	tacos_launched: u32,
+	total_projectiles_launched: u32,
+	time_remaining: Timer,
+	tacos_remaining: u32,
+}
+
+impl Default for GameStats {
+	fn default() -> Self {
+		Self {
+			tacos_remaining: 10,
+			total_projectiles_launched: 0,
+			time_remaining: Timer::from_seconds(5., TimerMode::Once),
+		}
+	}
 }
 
 fn main() {
@@ -48,6 +60,7 @@ fn main() {
 			..default()
 		}))
 		.init_state::<GameState>()
+		.init_state::<InGameState>()
 		// .add_plugins(EguiPlugin {
 		// 	enable_multipass_for_primary_context: true,
 		// })
@@ -56,11 +69,16 @@ fn main() {
 		.add_plugins(MenuPlugin {})
 		.add_systems(
 			OnEnter(GameState::Game),
-			(setup_entities, ui_config_gizmos).chain(),
+			(setup_entities, ui_config_gizmos, setup_game_ui).chain(),
+		)
+		.add_systems(
+			OnEnter(InGameState::GameOver),
+			(ui_setup_gameover_screen).chain(),
 		)
 		.add_systems(
 			FixedUpdate,
 			(
+				check_game_over,
 				player_shooting,
 				donnie_shooting,
 				spawn_projectiles,
@@ -78,10 +96,12 @@ fn main() {
 				update_stonks_price,
 				player_investing,
 				ui_update,
+				ui_update_game_stats,
 				ui_fancy_update,
 			)
 				.chain()
-				.run_if(in_state(GameState::Game)),
+				.run_if(in_state(GameState::Game))
+				.run_if(in_state(InGameState::Playing)),
 		)
 		.add_event::<CollisionEvent>()
 		.add_event::<TraderChange>()
@@ -101,8 +121,6 @@ fn setup_entities(
 	mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
 	let mut rng = rand::rng();
-
-	commands.spawn((Text::new("Stonks go here"), StonksUiText));
 
 	// Shadow mesh
 	let mesh_handle = meshes.add(Circle::new(25.));
@@ -290,8 +308,7 @@ fn handle_collisions(
 
 		if is_rumor_trader {
 			check_rumor_vs_trader(collision.entity1, collision.entity2);
-		}
-		if is_trader_rumor {
+		} else if is_trader_rumor {
 			check_rumor_vs_trader(collision.entity2, collision.entity1);
 		}
 	}
