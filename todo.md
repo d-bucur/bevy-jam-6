@@ -1,0 +1,7 @@
+- menus
+- graphics
+- audio
+- tutorial
+- stonk chart with juice
+- press buy a single time to use all your money
+- high score and game end

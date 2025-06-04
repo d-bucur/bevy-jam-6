@@ -12,13 +12,13 @@ pub const bearish: [&str; 7] = [
 	"O NO",
 	"MEIN GOTT",
 	"O NEIN",
-	"Me e scemo questo",
+	"Ma questo e scemo",
 	"Ba da asta-i tampit",
 	"STONKS DOWN",
 	"WTF",
 ];
 
-pub const tariff_values: [&str; 9] = [
+pub const tariff_values: [&str; 10] = [
 	"20",
 	"42",
 	"69",
@@ -27,10 +27,11 @@ pub const tariff_values: [&str; 9] = [
 	"420",
 	"9001",
 	"GAJILLION",
+	"BAZMILLION",
 	"INFINITY",
 ];
 
-pub const tariff_targets: [&str; 8] = [
+pub const tariff_targets: [&str; 9] = [
 	"STEEL",
 	"ELECTRONICS",
 	"THIS GAME",
@@ -39,6 +40,7 @@ pub const tariff_targets: [&str; 8] = [
 	"CHINA",
 	"EUROPE",
 	"ATLANTIS",
+	"BEVY",
 ];
 
 pub fn random_dialogue(a: &[&'static str]) -> &'static str {

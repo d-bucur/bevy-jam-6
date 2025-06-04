@@ -10,12 +10,16 @@ use rand::prelude::*;
 mod animations;
 mod config;
 mod dialogue;
+mod game;
+mod menu;
 mod physics;
 mod ui;
 
 use animations::*;
 use config::*;
 use dialogue::*;
+use game::*;
+use menu::*;
 use physics::*;
 use ui::*;
 
@@ -145,13 +149,16 @@ fn main() {
 			meta_check: AssetMetaCheck::Never,
 			..default()
 		}))
+		.init_state::<GameState>()
 		// .add_plugins(EguiPlugin {
 		// 	enable_multipass_for_primary_context: true,
 		// })
 		// .add_plugins(WorldInspectorPlugin::new())
+		.add_systems(Startup, window_setup)
+		.add_plugins(MenuPlugin {})
 		.add_systems(
-			Startup,
-			(setup_entities, ui_config_gizmos, window_setup).chain(),
+			OnEnter(GameState::Game),
+			(setup_entities, ui_config_gizmos).chain(),
 		)
 		.add_systems(
 			FixedUpdate,
@@ -173,7 +180,8 @@ fn main() {
 				ui_update,
 				ui_fancy_update,
 			)
-				.chain(),
+				.chain()
+				.run_if(in_state(GameState::Game)),
 		)
 		.add_event::<CollisionEvent>()
 		.add_event::<TraderChange>()
@@ -191,7 +199,6 @@ fn setup_entities(
 	mut meshes: ResMut<Assets<Mesh>>,
 	mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-	commands.spawn(Camera2d);
 	let mut rng = rand::rng();
 
 	commands.spawn((Text::new("Stonks go here"), StonksUiText));
@@ -294,11 +301,12 @@ fn setup_entities(
 	));
 }
 
-fn window_setup(mut window: Single<&mut Window>) {
+fn window_setup(mut window: Single<&mut Window>, mut cmds: Commands,) {
 	let scale_factor = window.resolution.scale_factor();
 	window
 		.resolution
 		.set(WIDTH * scale_factor, HEIGHT * scale_factor);
+	cmds.spawn(Camera2d);
 }
 
 fn move_entities(
@@ -610,7 +618,8 @@ fn process_text_requests(
 				continue;
 			};
 			*visibility = Visibility::Visible;
-			overhead.display_timer = Timer::from_seconds(event.duration_sec.unwrap_or(1.), TimerMode::Once);
+			overhead.display_timer =
+				Timer::from_seconds(event.duration_sec.unwrap_or(1.), TimerMode::Once);
 			if let Some(a) = &event.text {
 				text.0 = a.clone()
 			}
