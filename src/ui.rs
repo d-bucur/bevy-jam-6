@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 
 use crate::{
-	config::{STONKS_DATA_POINTS, STONKS_PER_BEARISH, STONKS_PER_BULLISH, TRADER_COUNT}, StonksTrading, StonksUiText, HEIGHT, WIDTH
+	HEIGHT, StonksTrading, StonksUiText, WIDTH,
+	config::{STONKS_DATA_POINTS, STONKS_PER_BEARISH, STONKS_PER_BULLISH, TRADER_COUNT},
 };
 
 pub fn ui_update(mut query: Query<&mut Text, With<StonksUiText>>, stonks: Res<StonksTrading>) {

@@ -62,7 +62,10 @@ pub fn move_entities(
 	}
 }
 
-pub fn animations(mut animations: Query<(&mut Transform, &mut Animation<Transform>)>, time: Res<Time>) {
+pub fn animations(
+	mut animations: Query<(&mut Transform, &mut Animation<Transform>)>,
+	time: Res<Time>,
+) {
 	for (mut t, mut anim) in animations.iter_mut() {
 		anim.tick(time.delta_secs(), &mut t);
 	}

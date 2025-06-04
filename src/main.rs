@@ -1,10 +1,7 @@
 use std::collections::VecDeque;
 
 use bevy::asset::AssetMetaCheck;
-use bevy::math::VectorSpace;
 use bevy::prelude::*;
-use bevy::render::camera;
-use bevy::render::view::visibility;
 use bevy_inspector_egui::bevy_egui::EguiPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use rand::prelude::*;
@@ -13,25 +10,25 @@ mod animations;
 mod config;
 mod dialogue;
 mod game;
-mod menu;
-mod physics;
-mod ui;
 mod investing;
+mod menu;
+mod movement;
+mod physics;
 mod shooting;
 mod traders;
-mod movement;
+mod ui;
 
 use animations::*;
 use config::*;
 use dialogue::*;
 use game::*;
-use menu::*;
-use physics::*;
-use ui::*;
 use investing::*;
+use menu::*;
+use movement::*;
+use physics::*;
 use shooting::*;
 use traders::*;
-use movement::*;
+use ui::*;
 
 #[derive(Component)]
 struct Donnie;

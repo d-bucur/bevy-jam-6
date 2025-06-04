@@ -9,4 +9,3 @@ pub enum GameState {
 	Tutorial,
 	Credits,
 }
-
