@@ -1,10 +1,11 @@
-- menus
-- aiming
+- press buy a single time to use all your money
 - bullet patterns
+- stonk chart with juice
+- high score and game end
+- menus
 - graphics
 - audio
 - tutorial
-- stonk chart with juice
-- press buy a single time to use all your money
-- high score and game end
+
+# optional
 - roguelike progression?

@@ -10,11 +10,11 @@ mod animations;
 mod config;
 mod dialogue;
 mod game;
-mod investing;
 mod menu;
 mod movement;
 mod physics;
 mod shooting;
+mod stonks;
 mod traders;
 mod ui;
 
@@ -22,11 +22,11 @@ use animations::*;
 use config::*;
 use dialogue::*;
 use game::*;
-use investing::*;
 use menu::*;
 use movement::*;
 use physics::*;
 use shooting::*;
+use stonks::*;
 use traders::*;
 use ui::*;
 
@@ -140,7 +140,6 @@ fn setup_entities(
 				progress: 0.,
 				animation_speed: 10.,
 				animations: vec![
-					// TODO better to change custom anchor on sprite than transform
 					AnimValue::new(|t, _, n| t.scale.y = n, |p| (-p * 2.).cos() / 2. * 0.1 + 1.),
 					AnimValue::new(|t, o, n| t.rotate_z(-o + n), |p| p.sin() * 0.075),
 					AnimValue::new(|t, o, n| t.translation.y += n - o, |p| (-p * 2.).cos() * 5.),
@@ -174,14 +173,11 @@ fn setup_entities(
 			radius: 25.,
 			offset: Vec2::new(0., 14.),
 		},
-		// PhysicsBody {
-		// 	velocity: Vec2::new(
-		// 		rng.random_range(-TRADER_MAX_VELOCITY..TRADER_MAX_VELOCITY),
-		// 		rng.random_range(-TRADER_MAX_VELOCITY..TRADER_MAX_VELOCITY),
-		// 	),
-		// 	..Default::default()
-		// },
-		// RandomMovement,
+		PhysicsBody {
+			velocity: get_trader_random_velocity(),
+			..Default::default()
+		},
+		RandomMovement::default(),
 		EdgeBehavior::Wraparound,
 		Animation::<Transform> {
 			progress: 0.,

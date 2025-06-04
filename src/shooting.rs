@@ -22,7 +22,7 @@ pub struct DonnieShootingLogic {
 impl Default for DonnieShootingLogic {
 	fn default() -> Self {
 		Self {
-			shooting_timer: Timer::from_seconds(3.0, TimerMode::Repeating),
+			shooting_timer: Timer::from_seconds(2.0, TimerMode::Repeating),
 		}
 	}
 }
@@ -64,8 +64,8 @@ pub fn player_shooting(
 pub fn donnie_shooting(
 	// TODO should just put in Donnie entity?
 	d: Query<(&Transform, Entity), With<Donnie>>,
-	traders_q: Query<&Transform, With<Trader>>,
 	mut shooting_logic: ResMut<DonnieShootingLogic>,
+	traders_q: Query<&Transform, With<Trader>>,
 	time: Res<Time>,
 	mut spawn_events: EventWriter<SpawnProjectile>,
 	mut overhead_events: EventWriter<OverheadTextRequest>,
