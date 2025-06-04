@@ -301,12 +301,29 @@ fn setup_entities(
 	));
 }
 
-fn window_setup(mut window: Single<&mut Window>, mut cmds: Commands,) {
+fn window_setup(mut window: Single<&mut Window>, mut cmds: Commands) {
 	let scale_factor = window.resolution.scale_factor();
 	window
 		.resolution
 		.set(WIDTH * scale_factor, HEIGHT * scale_factor);
-	cmds.spawn(Camera2d);
+	cmds.spawn((
+		Camera2d,
+		Projection::Orthographic(OrthographicProjection {
+			// scaling_mode: bevy::render::camera::ScalingMode::Fixed {
+			// 	width: WIDTH * scale_factor,
+			// 	height: HEIGHT * scale_factor,
+			// },
+			// scaling_mode: bevy::render::camera::ScalingMode::AutoMax {
+			// 	max_width: WIDTH * scale_factor,
+			// 	max_height: HEIGHT * scale_factor,
+			// },
+			// This seems to be the best one?
+			scaling_mode: bevy::render::camera::ScalingMode::FixedVertical {
+				viewport_height: HEIGHT * scale_factor,
+			},
+			..OrthographicProjection::default_2d()
+		}),
+	));
 }
 
 fn move_entities(
@@ -319,7 +336,7 @@ fn move_entities(
 	)>,
 	mut cmds: Commands,
 ) {
-	for (entity, body, mut transform, maybe_edge, mut maybe_sprite) in query.iter_mut() {
+	for (entity, body, mut transform, maybe_edge, maybe_sprite) in query.iter_mut() {
 		// transform.translation = ((transform.translation.xy() + body.velocity), 0.).into()
 		transform.translation.x += body.velocity.x;
 		transform.translation.y += body.velocity.y;
