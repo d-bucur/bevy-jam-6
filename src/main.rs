@@ -157,6 +157,7 @@ fn setup_entities(
 		));
 	}
 
+	// TODO should refactor with above
 	// Donnie
 	commands.spawn((
 		Sprite {
@@ -234,7 +235,7 @@ fn handle_collisions(
 	mut trader: Query<&mut Trader>,
 	rumor: Query<&Rumor>,
 	trader_query: Query<(&Transform, Option<&TraderRestTimer>)>,
-	projectile: Query<&Projectile>,
+	projectile_query: Query<(&Projectile, &Transform)>,
 ) {
 	for collision in collisions.read() {
 		// TODO cache component gets?
@@ -246,7 +247,8 @@ fn handle_collisions(
 		let mut check_rumor_vs_trader = |rumor_entity, trader_entity| {
 			let mut trader = trader.get_mut(trader_entity).unwrap();
 			let rumor = *rumor.get(rumor_entity).unwrap();
-			if projectile.get(rumor_entity).unwrap().owner == Some(trader_entity)
+			let (projectile, projectile_transform) = projectile_query.get(rumor_entity).unwrap();
+			if projectile.owner == Some(trader_entity)
 				|| (rumor == Rumor::Taco && trader.status == TraderStatus::Bullish)
 				|| (rumor == Rumor::Tariff && trader.status == TraderStatus::Bearish)
 			{
@@ -273,24 +275,16 @@ fn handle_collisions(
 			// Spawn chain reaction bullets
 			cmds.entity(rumor_entity).despawn();
 			let position = trader_transform.translation.xy();
-			spawn_events.write(SpawnProjectile {
-				projectile_type: rumor,
-				position,
-				direction: Vec2::new(1., 0.) * PROJECTILE_SPEED,
-				owner: Some(trader_entity),
-			});
-			spawn_events.write(SpawnProjectile {
-				projectile_type: rumor,
-				position,
-				direction: Vec2::new(-1., 0.) * PROJECTILE_SPEED,
-				owner: Some(trader_entity),
-			});
-			spawn_events.write(SpawnProjectile {
-				projectile_type: rumor,
-				position,
-				direction: Vec2::new(0., 1.) * PROJECTILE_SPEED,
-				owner: Some(trader_entity),
-			});
+			let hit_direction = -(position - projectile_transform.translation.xy()).normalize();
+			let pattern = UniformPattern { bullet_count: 3 };
+			for dir in pattern.direction_iter(hit_direction) {
+				spawn_events.write(SpawnProjectile {
+					projectile_type: rumor,
+					position,
+					direction: dir * PROJECTILE_SPEED,
+					owner: Some(trader_entity),
+				});
+			}
 			true
 		};
 

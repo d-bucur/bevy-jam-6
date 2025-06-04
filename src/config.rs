@@ -11,7 +11,7 @@ pub const STONKS_PER_BULLISH: u32 = 7;
 pub const STONKS_DATA_POINTS: u32 = 300;
 
 pub const TRADER_COUNT: u32 = 15;
-pub const PROJECTILE_SPEED: f32 = 5.;
+pub const PROJECTILE_SPEED: f32 = 7.;
 pub const MOVEMENT_TIME: f32 = 5.;
 pub const IDLE_TIME: f32 = 1.;
 

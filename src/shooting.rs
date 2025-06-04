@@ -32,6 +32,24 @@ pub struct Projectile {
 	pub owner: Option<Entity>,
 }
 
+pub trait BulletPattern {
+	fn direction_iter(self, reference_dir: Vec2) -> impl Iterator<Item = Vec2>;
+}
+
+pub struct UniformPattern {
+	pub bullet_count: u32,
+}
+
+impl BulletPattern for UniformPattern {
+	fn direction_iter(self, reference_dir: Vec2) -> impl Iterator<Item = Vec2> {
+		let angle_step = std::f32::consts::PI * 2. / self.bullet_count as f32;
+		(0..self.bullet_count).map(move |i| {
+			let angle = i as f32 * angle_step;
+			Vec2::from_angle(angle).rotate(reference_dir)
+		})
+	}
+}
+
 pub fn player_shooting(
 	key_button: Res<ButtonInput<KeyCode>>,
 	mouse_button: Res<ButtonInput<MouseButton>>,
