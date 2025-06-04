@@ -1,7 +1,9 @@
 use std::collections::VecDeque;
 
 use bevy::asset::AssetMetaCheck;
+use bevy::math::VectorSpace;
 use bevy::prelude::*;
+use bevy::render::camera;
 use bevy::render::view::visibility;
 use bevy_inspector_egui::bevy_egui::EguiPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
@@ -120,6 +122,11 @@ impl Default for DonnieShootingLogic {
 	}
 }
 
+#[derive(Resource, Default)]
+struct GameStats {
+	tacos_launched: u32,
+}
+
 #[derive(Event)]
 struct TraderChange {
 	entity: Entity,
@@ -173,6 +180,7 @@ fn main() {
 				y_sort,
 				check_collisions,
 				handle_collisions,
+				// debug_colliders,
 				tick_trader_timers,
 				update_trader_status,
 				update_stonks_price,
@@ -190,6 +198,7 @@ fn main() {
 		.init_resource::<StonksTrading>()
 		.init_resource::<DonnieShootingLogic>()
 		.insert_resource(ClearColor(Color::Srgba(Srgba::hex("5E5E5E").unwrap())))
+		.init_resource::<GameStats>()
 		.run();
 }
 
@@ -225,7 +234,10 @@ fn setup_entities(
 				..Default::default()
 			},
 			Trader::default(),
-			Collider { radius: 25. },
+			Collider {
+				radius: 25.,
+				offset: Vec2::new(0., 14.),
+			},
 			PhysicsBody {
 				velocity: Vec2::new(
 					rng.random_range(-TRADER_MAX_VELOCITY..TRADER_MAX_VELOCITY),
@@ -269,7 +281,10 @@ fn setup_entities(
 			translation: Vec3::new(0., HEIGHT, 0.),
 			..Default::default()
 		},
-		Collider { radius: 25. },
+		Collider {
+			radius: 25.,
+			offset: Vec2::new(0., 14.),
+		},
 		// PhysicsBody {
 		// 	velocity: Vec2::new(
 		// 		rng.random_range(-TRADER_MAX_VELOCITY..TRADER_MAX_VELOCITY),
@@ -434,26 +449,25 @@ fn handle_collisions(
 				TraderRestTimer(Timer::from_seconds(0.5, TimerMode::Once)),
 			));
 
-			// TODO sometimes loop & crash if lots of stuff is overlapping. Owner not enough, need a disable timer
 			// Spawn chain reaction bullets
 			cmds.entity(rumor_entity).despawn();
 			let position = trader_transform.translation.xy();
 			spawn_events.write(SpawnProjectile {
 				projectile_type: rumor,
 				position,
-				direction: Vec2::new(5., 0.),
+				direction: Vec2::new(1., 0.) * PROJECTILE_SPEED,
 				owner: Some(trader_entity),
 			});
 			spawn_events.write(SpawnProjectile {
 				projectile_type: rumor,
 				position,
-				direction: Vec2::new(-5., 0.),
+				direction: Vec2::new(-1., 0.) * PROJECTILE_SPEED,
 				owner: Some(trader_entity),
 			});
 			spawn_events.write(SpawnProjectile {
 				projectile_type: rumor,
 				position,
-				direction: Vec2::new(0., 5.),
+				direction: Vec2::new(0., 1.) * PROJECTILE_SPEED,
 				owner: Some(trader_entity),
 			});
 			true
@@ -481,15 +495,29 @@ fn player_investing(key_input: Res<ButtonInput<KeyCode>>, mut stonks: ResMut<Sto
 }
 
 fn player_shooting(
-	key_input: Res<ButtonInput<KeyCode>>,
+	key_button: Res<ButtonInput<KeyCode>>,
+	mouse_button: Res<ButtonInput<MouseButton>>,
 	mut spawn_events: EventWriter<SpawnProjectile>,
+	mut gizmos: Gizmos,
+	window: Single<&Window>,
+	camera: Single<(&Camera, &GlobalTransform)>,
 ) {
-	const START_POS: Vec2 = Vec2::new(0., -HEIGHT); // change later
-	if key_input.just_pressed(KeyCode::Space) {
+	const START_POS: Vec2 = Vec2::new(0., -HEIGHT);
+
+	let Some(cursor_pos) = window
+		.cursor_position()
+		.and_then(|p| camera.0.viewport_to_world_2d(camera.1, p).ok())
+	else {
+		return;
+	};
+
+	gizmos.arrow_2d(START_POS, cursor_pos, bevy::color::palettes::css::GREEN);
+
+	if key_button.just_pressed(KeyCode::Space) || mouse_button.just_pressed(MouseButton::Left) {
 		spawn_events.write(SpawnProjectile {
 			projectile_type: Rumor::Taco,
 			position: START_POS,
-			direction: Vec2::new(0., 5.),
+			direction: (cursor_pos - START_POS).normalize() * PROJECTILE_SPEED,
 			owner: None,
 		});
 	}
@@ -498,31 +526,42 @@ fn player_shooting(
 fn donnie_shooting(
 	// TODO should just put in Donnie entity?
 	d: Query<(&Transform, Entity), With<Donnie>>,
+	traders_q: Query<&Transform, With<Trader>>,
 	mut shooting_logic: ResMut<DonnieShootingLogic>,
 	time: Res<Time>,
 	mut spawn_events: EventWriter<SpawnProjectile>,
 	mut overhead_events: EventWriter<OverheadTextRequest>,
 ) {
-	let (transform, entity) = d.single().unwrap();
-	if shooting_logic
+	if !shooting_logic
 		.shooting_timer
 		.tick(time.delta())
 		.just_finished()
 	{
-		spawn_events.write(SpawnProjectile {
-			projectile_type: Rumor::Tariff,
-			position: transform.translation.xy(),
-			direction: Vec2::new(0., -5.),
-			owner: Some(entity),
-		});
-		overhead_events.write(OverheadTextRequest {
-			attached_to: entity,
-			text: Some(random_tariff()),
-			duration_sec: Some(1.5),
-		});
+		return;
 	}
+	use rand::seq::IteratorRandom;
+	let (transform, entity) = d.single().unwrap();
+	let mut rng = rand::rng();
+	let direction = traders_q
+		.iter()
+		.choose(&mut rng)
+		.map(|trader| (trader.translation.xy() - transform.translation.xy()).normalize())
+		.unwrap_or(Vec2::new(0., -1.));
+
+	spawn_events.write(SpawnProjectile {
+		projectile_type: Rumor::Tariff,
+		position: transform.translation.xy(),
+		direction: direction * PROJECTILE_SPEED,
+		owner: Some(entity),
+	});
+	overhead_events.write(OverheadTextRequest {
+		attached_to: entity,
+		text: Some(random_tariff()),
+		duration_sec: Some(1.5),
+	});
 }
 
+/// Just a graphical update of the sprite and overhead text
 fn update_trader_status(
 	mut traders: Query<(&mut Sprite, &Trader)>,
 	mut events: EventReader<TraderChange>,
@@ -588,6 +627,7 @@ fn spawn_projectiles(
 	mut spawn_events: EventReader<SpawnProjectile>,
 	mut commands: Commands,
 	asset_server: Res<AssetServer>,
+	mut stats: ResMut<GameStats>,
 ) {
 	for event in spawn_events.read() {
 		commands.spawn((
@@ -604,7 +644,10 @@ fn spawn_projectiles(
 				translation: (event.position, 0.).into(),
 				..Default::default()
 			},
-			Collider { radius: 25. },
+			Collider {
+				radius: 25.,
+				offset: Vec2::ZERO,
+			},
 			PhysicsBody {
 				velocity: event.direction,
 				..Default::default()
@@ -617,6 +660,7 @@ fn spawn_projectiles(
 				animations: vec![AnimValue::new(|t, _, n| t.rotate_local_z(n), |_| 0.1)],
 			},
 		));
+		stats.tacos_launched += 1;
 	}
 }
 
