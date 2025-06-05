@@ -13,7 +13,7 @@ pub const BULLISH: [&str; 10] = [
 	"CRINGE",
 ];
 
-pub const BEARISH: [&str; 9] = [
+pub const BEARISH: [&str; 10] = [
 	"O NO",
 	"LAME",
 	"MEIN GOTT",
@@ -23,6 +23,7 @@ pub const BEARISH: [&str; 9] = [
 	"STONKS DOWN",
 	"WTF",
 	"MARKET CRASH LOL",
+	"RECIPROCATED",
 ];
 
 pub const TARIFF_VALUES: [&str; 10] = [
