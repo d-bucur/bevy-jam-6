@@ -45,7 +45,7 @@ impl Default for GameStats {
 		Self {
 			tacos_remaining: 10,
 			total_projectiles_launched: 0,
-			time_remaining: Timer::from_seconds(5., TimerMode::Once),
+			time_remaining: Timer::from_seconds(60., TimerMode::Once),
 		}
 	}
 }
@@ -60,57 +60,62 @@ fn main() {
 			..default()
 		}))
 		.init_state::<GameState>()
-		.init_state::<InGameState>()
+		// Enable this part to use inspector
 		// .add_plugins(EguiPlugin {
 		// 	enable_multipass_for_primary_context: true,
 		// })
 		// .add_plugins(WorldInspectorPlugin::new())
-		.add_systems(Startup, window_setup)
 		.add_plugins(MenuPlugin {})
+		.add_systems(Startup, (window_setup, setup_entities).chain())
+		.add_systems(OnEnter(GameState::GameOver), ui_setup_gameover_screen)
+		.add_systems(OnEnter(GameState::PlaySetup), setup_play)
 		.add_systems(
-			OnEnter(GameState::Game),
-			(setup_entities, ui_config_gizmos, setup_game_ui).chain(),
-		)
-		.add_systems(
-			OnEnter(InGameState::GameOver),
-			(ui_setup_gameover_screen).chain(),
+			OnEnter(GameState::Playing),
+			(ui_config_gizmos, setup_game_ui).chain(),
 		)
 		.add_systems(
 			FixedUpdate,
 			(
-				check_game_over,
-				player_shooting,
-				donnie_shooting,
-				spawn_projectiles,
-				process_text_requests,
-				update_texts,
-				handle_random_movement,
-				move_entities,
-				animations,
-				y_sort,
-				check_collisions,
-				handle_collisions,
-				// debug_colliders,
-				tick_trader_timers,
-				update_trader_status,
-				update_stonks_price,
-				player_investing,
-				ui_update,
-				ui_update_game_stats,
-				ui_fancy_update,
+				check_game_pause,
+				(check_game_over, player_shooting)
+					.chain()
+					.run_if(in_state(GameState::Playing)),
+				(
+					donnie_shooting,
+					spawn_projectiles,
+					process_text_requests,
+					update_texts,
+					handle_random_movement,
+					move_entities,
+					animations,
+					y_sort,
+					check_collisions,
+					handle_collisions,
+					// debug_colliders,
+					tick_trader_timers,
+					update_trader_status,
+				)
+					.chain()
+					.run_if(not(in_state(GameState::Paused))),
+				(
+					update_stonks_price,
+					player_investing,
+					ui_update,
+					ui_update_game_stats,
+					ui_fancy_update,
+				)
+					.chain()
+					.run_if(in_state(GameState::Playing)),
 			)
-				.chain()
-				.run_if(in_state(GameState::Game))
-				.run_if(in_state(InGameState::Playing)),
+				.chain(),
 		)
 		.add_event::<CollisionEvent>()
 		.add_event::<TraderChange>()
 		.add_event::<SpawnProjectile>()
 		.add_event::<OverheadTextRequest>()
-		.init_resource::<StonksTrading>()
-		.init_resource::<DonnieShootingLogic>()
+		.insert_resource(DonnieShootingLogic::default())
+		.insert_resource(GameStats::default())
 		.insert_resource(ClearColor(Color::Srgba(Srgba::hex("5E5E5E").unwrap())))
-		.init_resource::<GameStats>()
 		.run();
 }
 
@@ -218,6 +223,24 @@ fn setup_entities(
 			(Text2d::new("TARIFFS!"), OverheadText::default())
 		],
 	));
+}
+
+fn setup_play(
+	mut cmds: Commands,
+	mut next_state: ResMut<NextState<GameState>>,
+	q: Query<(Entity), With<Projectile>>,
+	mut spawn_events: EventReader<SpawnProjectile>,
+) {
+	// Reset game stats
+	cmds.insert_resource(StonksTrading::default());
+	cmds.insert_resource(DonnieShootingLogic::default());
+	cmds.insert_resource(GameStats::default());
+	for e in q.iter() {
+		cmds.entity(e).despawn();
+	}
+	spawn_events.clear();
+	next_state.set(GameState::Playing);
+	// Reset trader statuses?
 }
 
 fn window_setup(mut window: Single<&mut Window>, mut cmds: Commands) {

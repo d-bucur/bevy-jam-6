@@ -1,8 +1,8 @@
 use std::borrow::Cow;
 
-use crate::*;
-use bevy::color::palettes::basic::*;
 use crate::game_states::GameState;
+use crate::*;
+use bevy::{color::palettes::basic::*, state::state::FreelyMutableState};
 
 const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
 const HOVERED_BUTTON: Color = Color::srgb(0.25, 0.25, 0.25);
@@ -12,13 +12,14 @@ pub struct MenuPlugin {}
 
 impl Plugin for MenuPlugin {
 	fn build(&self, app: &mut App) {
-		app.add_systems(OnEnter(GameState::Menu), spawn_main_menu)
+		app.add_systems(OnEnter(GameState::Menu), setup_main_menu)
+			.add_systems(OnEnter(GameState::Paused), setup_paused)
 			.add_systems(Update, apply_button_styles);
 	}
 }
 
 // better version here: https://github.com/TheBevyFlock/bevy_new_2d/blob/main/src/menus/main.rs
-fn spawn_main_menu(mut commands: Commands) {
+fn setup_main_menu(mut commands: Commands) {
 	commands
 		.spawn((
 			make_ui_root("Main Menu"),
@@ -28,13 +29,13 @@ fn spawn_main_menu(mut commands: Commands) {
 		.with_children(|parent| {
 			parent
 				.spawn(make_button("Play"))
-				.observe(change_state(GameState::Game));
-			parent
-				.spawn(make_button("Tutorial"))
-				.observe(change_state(GameState::Tutorial));
-			parent
-				.spawn(make_button("Credits"))
-				.observe(change_state(GameState::Credits));
+				.observe(change_state(GameState::PlaySetup));
+			// parent
+			// 	.spawn(make_button("Tutorial"))
+			// 	.observe(change_state(GameState::Tutorial));
+			// parent
+			// 	.spawn(make_button("Credits"))
+			// 	.observe(change_state(GameState::Credits));
 		});
 }
 
@@ -56,11 +57,14 @@ pub fn make_ui_root(name: impl Into<Cow<'static, str>>) -> impl Bundle {
 	)
 }
 
-pub fn change_state(
-	new_state: GameState,
-) -> impl Fn(Trigger<'_, Pointer<Click>>, ResMut<'_, NextState<GameState>>) {
-	move |_: Trigger<Pointer<Click>>, mut next_state: ResMut<NextState<GameState>>| {
-		next_state.set(new_state)
+pub fn change_state<T>(
+	new_state: T,
+) -> impl Fn(Trigger<'_, Pointer<Click>>, ResMut<'_, NextState<T>>)
+where
+	T: FreelyMutableState,
+{
+	move |_: Trigger<Pointer<Click>>, mut next_state: ResMut<NextState<T>>| {
+		next_state.set(new_state.clone())
 	}
 }
 
@@ -124,4 +128,24 @@ fn apply_button_styles(
 			}
 		}
 	}
+}
+
+fn setup_paused(mut commands: Commands) {
+	commands
+		.spawn((
+			make_ui_root("Paused"),
+			GlobalZIndex(2),
+			StateScoped(GameState::Paused),
+		))
+		.with_children(|parent| {
+			parent
+				.spawn(make_button("Resume"))
+				.observe(change_state(GameState::Playing));
+			parent
+				.spawn(make_button("Restart"))
+				.observe(change_state(GameState::PlaySetup));
+			parent
+				.spawn(make_button("Menu"))
+				.observe(change_state(GameState::Menu));
+		});
 }

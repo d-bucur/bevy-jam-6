@@ -1,21 +1,28 @@
 use crate::*;
 
-pub const BULLISH: [&str; 5] = [
+pub const BULLISH: [&str; 10] = [
 	"PHEW",
 	"YAY",
 	"STONKS UP",
 	"FART OF THE DEAL",
 	"TACOed",
+	"LIBERATED",
+	"PAUSED LOL",
+	"CHICKEN",
+	"BOK BOK",
+	"CRINGE",
 ];
 
-pub const BEARISH: [&str; 7] = [
+pub const BEARISH: [&str; 9] = [
 	"O NO",
+	"LAME",
 	"MEIN GOTT",
 	"O NEIN",
-	"Ma questo e scemo",
-	"Ba da asta-i tampit",
+	"MA CHE SCEMO",
+	"CE TAMPIT",
 	"STONKS DOWN",
 	"WTF",
+	"MARKET CRASH LOL",
 ];
 
 pub const TARIFF_VALUES: [&str; 10] = [
@@ -31,9 +38,10 @@ pub const TARIFF_VALUES: [&str; 10] = [
 	"INFINITY",
 ];
 
-pub const TARIFF_TARGETS: [&str; 9] = [
+pub const TARIFF_TARGETS: [&str; 12] = [
 	"STEEL",
 	"ELECTRONICS",
+	"NAZI CARS",
 	"THIS GAME",
 	"ORANGE TAN",
 	"PENGUINS",
@@ -41,6 +49,8 @@ pub const TARIFF_TARGETS: [&str; 9] = [
 	"EUROPE",
 	"ATLANTIS",
 	"BEVY",
+	"AI SLOP",
+	"ITCH.IO",
 ];
 
 pub fn random_dialogue(a: &[&'static str]) -> &'static str {

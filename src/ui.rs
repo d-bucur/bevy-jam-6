@@ -3,11 +3,6 @@ use crate::*;
 #[derive(Component)]
 pub struct GameStatsText;
 
-use crate::{
-	HEIGHT, StonksTrading, StonksUiText, WIDTH,
-	config::{STONKS_DATA_POINTS, STONKS_PER_BEARISH, STONKS_PER_BULLISH, TRADER_COUNT},
-};
-
 pub fn setup_game_ui(mut commands: Commands) {
 	commands
 		.spawn((
@@ -25,8 +20,7 @@ pub fn setup_game_ui(mut commands: Commands) {
 			// Don't block picking events for other UI roots.
 			Pickable::IGNORE,
 			GlobalZIndex(2),
-			StateScoped(GameState::Game),
-			StateScoped(InGameState::Playing),
+			StateScoped(GameState::Playing),
 		))
 		.with_children(|parent| {
 			parent.spawn((Text::new("Stonks go here"), StonksUiText));
@@ -137,17 +131,15 @@ pub fn ui_setup_gameover_screen(mut commands: Commands, stonks: Res<StonksTradin
 			// Don't block picking events for other UI roots.
 			Pickable::IGNORE,
 			GlobalZIndex(2),
-			StateScoped(GameState::Game),
-			StateScoped(InGameState::GameOver),
+			StateScoped(GameState::GameOver),
 		))
 		.with_children(|parent| {
 			parent.spawn(Text::new(format!("Profit: {}", stonks.returns_total)));
 			parent
 				.spawn(make_button("Play"))
-				.observe(change_state(GameState::Game));
+				.observe(change_state(GameState::PlaySetup));
 			parent
 				.spawn(make_button("Main Menu"))
 				.observe(change_state(GameState::Menu));
 		});
 }
-	
