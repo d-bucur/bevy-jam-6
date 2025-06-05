@@ -31,18 +31,18 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-      - uses: actions/cache@v4.2.3
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
-          # will try to use previous cache if there was a miss. Might still be useful, but increases
-          # cache size continuously when updating dependencies. Disable if you want to avoid this
-          restore-keys: ${{ runner.os }}-cargo-
+      # - uses: actions/cache@v4.2.3
+      #   with:
+      #     path: |
+      #       ~/.cargo/bin/
+      #       ~/.cargo/registry/index/
+      #       ~/.cargo/registry/cache/
+      #       ~/.cargo/git/db/
+      #       target/
+      #     key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
+      #     # will try to use previous cache if there was a miss. Might still be useful, but increases
+      #     # cache size continuously when updating dependencies. Disable if you want to avoid this
+      #     restore-keys: ${{ runner.os }}-cargo-
       - name: install wasm-bindgen-cli
         run: |
           cargo install wasm-bindgen-cli
