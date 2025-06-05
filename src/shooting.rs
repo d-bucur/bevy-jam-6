@@ -86,12 +86,13 @@ pub fn player_shooting(
 
 pub fn donnie_shooting(
 	// TODO should just put in Donnie entity?
-	d: Query<(&Transform, Entity), With<Donnie>>,
+	mut query: Query<(&Transform, Entity, &mut Sprite), With<Donnie>>,
 	mut shooting_logic: ResMut<DonnieShootingLogic>,
 	traders_q: Query<&Transform, With<Trader>>,
 	time: Res<Time>,
 	mut spawn_events: EventWriter<SpawnProjectile>,
 	mut overhead_events: EventWriter<OverheadTextRequest>,
+	asset_server: Res<AssetServer>,
 ) {
 	if !shooting_logic
 		.shooting_timer
@@ -101,7 +102,7 @@ pub fn donnie_shooting(
 		return;
 	}
 	use rand::seq::IteratorRandom;
-	let (transform, entity) = d.single().unwrap();
+	let (transform, entity, mut sprite) = query.single_mut().unwrap();
 	let mut rng = rand::rng();
 	let direction = traders_q
 		.iter()
@@ -120,6 +121,7 @@ pub fn donnie_shooting(
 		text: Some(random_tariff()),
 		duration_sec: Some(1.5),
 	});
+	sprite.image = asset_server.load(donnie_texture_path());
 }
 
 pub fn spawn_projectiles(
@@ -144,7 +146,7 @@ pub fn spawn_projectiles(
 				..Default::default()
 			},
 			Collider {
-				radius: 25.,
+				radius: 20.,
 				offset: Vec2::ZERO,
 			},
 			PhysicsBody {

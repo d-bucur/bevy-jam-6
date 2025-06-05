@@ -7,6 +7,7 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use rand::prelude::*;
 
 mod animations;
+mod audio;
 mod config;
 mod dialogue;
 mod game_states;
@@ -17,8 +18,10 @@ mod shooting;
 mod stonks;
 mod traders;
 mod ui;
+mod assets;
 
 use animations::*;
+use audio::*;
 use config::*;
 use dialogue::*;
 use game_states::*;
@@ -29,6 +32,7 @@ use shooting::*;
 use stonks::*;
 use traders::*;
 use ui::*;
+use assets::*;
 
 #[derive(Component)]
 struct Donnie;
@@ -66,7 +70,7 @@ fn main() {
 		// })
 		// .add_plugins(WorldInspectorPlugin::new())
 		.add_plugins(MenuPlugin {})
-		.add_systems(Startup, (window_setup, setup_entities).chain())
+		.add_systems(Startup, (window_setup, setup_entities, setup_audio).chain())
 		.add_systems(OnEnter(GameState::GameOver), ui_setup_gameover_screen)
 		.add_systems(OnEnter(GameState::PlaySetup), setup_play)
 		.add_systems(
@@ -135,8 +139,9 @@ fn setup_entities(
 	for _ in 0..TRADER_COUNT {
 		commands.spawn((
 			Sprite {
-				image: asset_server.load("ducky.png"),
+				image: asset_server.load(investor_texture_path()),
 				custom_size: Some(vec2(50., 50.)),
+				image_mode: SpriteImageMode::Scale(ScalingMode::FitCenter),
 				anchor: bevy::sprite::Anchor::BottomCenter,
 				..Default::default()
 			},
@@ -184,8 +189,9 @@ fn setup_entities(
 	// Donnie
 	commands.spawn((
 		Sprite {
-			image: asset_server.load("monkey-svgrepo-com.png"),
-			custom_size: Some(vec2(50., 50.)),
+			image: asset_server.load(donnie_texture_path()),
+			custom_size: Some(vec2(70., 70.)),
+			image_mode: SpriteImageMode::Scale(ScalingMode::FitCenter),
 			anchor: bevy::sprite::Anchor::BottomCenter,
 			..Default::default()
 		},

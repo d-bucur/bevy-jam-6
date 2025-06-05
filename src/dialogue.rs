@@ -1,6 +1,6 @@
 use crate::*;
 
-pub const BULLISH: [&str; 10] = [
+pub const BULLISH: [&str; 11] = [
 	"PHEW",
 	"YAY",
 	"STONKS UP",
@@ -11,6 +11,7 @@ pub const BULLISH: [&str; 10] = [
 	"CHICKEN",
 	"BOK BOK",
 	"CRINGE",
+	"MY 401K",
 ];
 
 pub const BEARISH: [&str; 10] = [

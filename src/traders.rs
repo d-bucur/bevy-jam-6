@@ -43,10 +43,10 @@ pub fn update_trader_status(
 		let (mut sprite, trader) = traders.get_mut(event.entity).unwrap();
 		match trader.status {
 			TraderStatus::Neutral => {
-				sprite.image = asset_server.load("ducky.png");
+				sprite.image = asset_server.load(investor_texture_path());
 			}
 			TraderStatus::Bearish => {
-				sprite.image = asset_server.load("bear-svgrepo-com.png");
+				sprite.image = asset_server.load(bearish_texture_path());
 				if rng.random_bool(TEXT_CHANCE) {
 					overhead_events.write(OverheadTextRequest {
 						attached_to: event.entity,
@@ -56,7 +56,7 @@ pub fn update_trader_status(
 				}
 			}
 			TraderStatus::Bullish => {
-				sprite.image = asset_server.load("bull-svgrepo-com.png");
+				sprite.image = asset_server.load(bullish_texture_path());
 				if rng.random_bool(TEXT_CHANCE) {
 					overhead_events.write(OverheadTextRequest {
 						attached_to: event.entity,

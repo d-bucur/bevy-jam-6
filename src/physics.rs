@@ -53,7 +53,7 @@ pub fn debug_colliders(mut gizmos: Gizmos, query: Query<(&Transform, &Collider),
 		gizmos.circle_2d(
 			Isometry2d::from_translation(transform.translation.xy() + collider.offset),
 			collider.radius,
-			BLUE.with_alpha(0.5),
+			BLUE.with_alpha(0.4),
 		);
 	}
 }
