@@ -7,7 +7,7 @@ on:
 
 env:
   # update with the name of the main binary
-  binary: bevy_github_ci_template
+  binary: make_tacos_great_again
   add_binaries_to_github_release: true
   itch_target: sirdorius/taco-reaction
 
@@ -31,7 +31,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4.2.3
         with:
           path: |
             ~/.cargo/bin/
