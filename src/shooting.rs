@@ -170,6 +170,7 @@ pub fn spawn_projectiles(
 			},
 			EdgeBehavior::Destroy,
 			Projectile { owner: event.owner },
+			AreaTrigger,
 			Animation::<Transform> {
 				progress: 0.,
 				animation_speed: 1.,
