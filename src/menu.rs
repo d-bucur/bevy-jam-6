@@ -14,6 +14,7 @@ impl Plugin for MenuPlugin {
 	fn build(&self, app: &mut App) {
 		app.add_systems(OnEnter(GameState::Menu), setup_main_menu)
 			.add_systems(OnEnter(GameState::Paused), setup_paused)
+			.add_systems(OnEnter(GameState::Options), setup_options)
 			.add_systems(Update, apply_button_styles);
 	}
 }
@@ -38,6 +39,9 @@ fn setup_main_menu(mut commands: Commands) {
 			parent
 				.spawn(make_button("Play"))
 				.observe(change_state(GameState::PlaySetup));
+			parent
+				.spawn(make_button("Options"))
+				.observe(change_state(GameState::Options));
 			// parent
 			// 	.spawn(make_button("Tutorial"))
 			// 	.observe(change_state(GameState::Tutorial));
@@ -169,4 +173,72 @@ fn setup_paused(mut commands: Commands) {
 				.spawn(make_button("Menu"))
 				.observe(change_state(GameState::Menu));
 		});
+}
+
+fn setup_options(mut commands: Commands) {
+	commands
+		.spawn((
+			Node {
+				position_type: PositionType::Absolute,
+				width: Val::Percent(100.0),
+				height: Val::Percent(100.0),
+				align_items: AlignItems::Center,
+				justify_content: JustifyContent::Center,
+				flex_direction: FlexDirection::Column,
+				padding: UiRect::vertical(Val::Px(200.)),
+				row_gap: Val::Px(20.0),
+				..default()
+			},
+			// Don't block picking events for other UI roots.
+			Pickable::IGNORE,
+			GlobalZIndex(2),
+			StateScoped(GameState::Options),
+		))
+		.with_children(|parent| {
+			parent.spawn(Text::new("Volume"));
+			parent
+				.spawn(Node {
+					flex_direction: FlexDirection::Row,
+					..default()
+				})
+				.with_children(|p| {
+					p.spawn(Text::new("Donnie"));
+					poor_mans_radio_select(p, AudioType::DonnieVoice);
+				});
+			parent
+				.spawn(Node {
+					flex_direction: FlexDirection::Row,
+					..default()
+				})
+				.with_children(|p| {
+					p.spawn(Text::new("Music"));
+					poor_mans_radio_select(p, AudioType::Music);
+				});
+			parent
+				.spawn(Node {
+					flex_direction: FlexDirection::Row,
+					..default()
+				})
+				.with_children(|p| {
+					p.spawn(Text::new("Effects"));
+					poor_mans_radio_select(p, AudioType::TraderStatusChange);
+				});
+			parent
+				.spawn(make_button("Back"))
+				.observe(change_state(GameState::Menu));
+		});
+}
+
+fn poor_mans_radio_select(
+	p: &mut bevy::ecs::relationship::RelatedSpawnerCommands<'_, ChildOf>,
+	audio: AudioType,
+) {
+	p.spawn(make_button("0"))
+		.observe(update_channel_volume(audio, 0.));
+	p.spawn(make_button("25"))
+		.observe(update_channel_volume(audio, 0.25));
+	p.spawn(make_button("50"))
+		.observe(update_channel_volume(audio, 0.5));
+	p.spawn(make_button("100"))
+		.observe(update_channel_volume(audio, 1.));
 }

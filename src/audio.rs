@@ -5,7 +5,7 @@ use bevy::{
 	platform::collections::HashMap,
 };
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum AudioType {
 	DonnieVoice,
 	TraderStatusChange,
@@ -13,6 +13,9 @@ pub enum AudioType {
 	StonksNotifcation,
 	Music,
 }
+
+#[derive(Component)]
+pub struct AudioTypeMarker(AudioType);
 
 #[derive(Resource, Deref, DerefMut)]
 pub struct AudioLimitCounters(pub [u32; 4]);
@@ -22,7 +25,7 @@ pub struct AudioLimitCounters(pub [u32; 4]);
 #[component(on_remove = on_audio_type_removed)]
 struct LimitedAudio(AudioType);
 
-#[derive(Resource, Deref)]
+#[derive(Resource, Deref, DerefMut)]
 pub struct VolumeSettings {
 	per_channel: HashMap<AudioType, f32>,
 }
@@ -68,6 +71,7 @@ pub fn setup_audio(
 			volume: Volume::Linear(0.9 * volume[&AudioType::Music]),
 			..default()
 		},
+		AudioTypeMarker(AudioType::Music),
 	));
 }
 
@@ -90,6 +94,7 @@ pub fn on_donnie_shot(
 			..default()
 		},
 		LimitedAudio(AudioType::DonnieVoice),
+		AudioTypeMarker(AudioType::DonnieVoice),
 	));
 }
 
@@ -118,6 +123,7 @@ pub fn on_trader_status_change(
 				..default()
 			},
 			LimitedAudio(AudioType::TraderStatusChange),
+			AudioTypeMarker(AudioType::TraderStatusChange),
 		));
 	}
 }
@@ -140,6 +146,7 @@ pub fn on_projectile_shot(
 			..default()
 		},
 		LimitedAudio(AudioType::ProjectileShot),
+		AudioTypeMarker(AudioType::ProjectileShot),
 	));
 }
 
@@ -170,7 +177,25 @@ pub fn on_stonks_notification(
 			..default()
 		},
 		LimitedAudio(AudioType::StonksNotifcation),
+		AudioTypeMarker(AudioType::StonksNotifcation),
 	));
+}
+
+pub fn update_channel_volume(
+	audio: AudioType,
+	volume: f32,
+) -> impl Fn(Trigger<Pointer<Click>>, ResMut<VolumeSettings>, Query<(&mut AudioSink, &AudioTypeMarker)>)
+{
+	move |_: Trigger<Pointer<Click>>,
+	      mut settings: ResMut<VolumeSettings>,
+	      mut sounds: Query<(&mut AudioSink, &AudioTypeMarker)>| {
+		settings.insert(audio, volume);
+		for (mut s, audio_type) in sounds.iter_mut() {
+			if audio_type.0 == audio {
+				s.set_volume(Volume::Linear(volume));
+			}
+		}
+	}
 }
 
 const SCREAMS: [&str; 3] = [

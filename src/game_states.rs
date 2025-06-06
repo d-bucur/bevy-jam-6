@@ -10,6 +10,7 @@ pub enum GameState {
 	Paused,
 	GameOver,
 	Tutorial,
+	Options,
 }
 
 pub fn check_game_over(

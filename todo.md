@@ -1,15 +1,12 @@
-- stonk chart with juice
-- different taco shooting strategy (timing)
 - tutorial
-- craziness/chaos level
 
 # polish
-- high score and game end
-- menus
+- show profit number on each sell
+- buy/sell status
 
 # optional
+- craziness/chaos level
 - roguelike progression?
 
 # options
-- volume levels for sounds
 - dialogue frequency

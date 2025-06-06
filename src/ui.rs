@@ -94,7 +94,6 @@ pub fn ui_update(
 	mut gizmos_dotted: Gizmos<DottedGizmoConfig>,
 	stonks: Res<StonksTrading>,
 ) {
-	// old chart
 	use bevy::color::palettes::css::*;
 	const HUE_MAX: f32 = 123.;
 
