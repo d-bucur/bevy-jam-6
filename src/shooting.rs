@@ -57,10 +57,10 @@ pub fn player_shooting(
 	mut gizmos: Gizmos,
 	window: Single<&Window>,
 	camera: Single<(&Camera, &GlobalTransform)>,
+	player: Single<&Transform, With<Player>>,
+	mut arrow: Single<&mut Transform, (With<PlayerArrowIndicator>, Without<Player>)>,
 	mut stats: ResMut<GameStats>,
 ) {
-	const START_POS: Vec2 = Vec2::new(0., -HEIGHT);
-
 	// draw shooting line
 	let Some(cursor_pos) = window
 		.cursor_position()
@@ -68,16 +68,24 @@ pub fn player_shooting(
 	else {
 		return;
 	};
-	gizmos.arrow_2d(START_POS, cursor_pos, bevy::color::palettes::css::GREEN);
 
+	// not sure if should use arrow or gizmo line. keeping both for now
+	let start_pos: Vec2 = player.translation.xy();
+	gizmos.line_2d(start_pos, cursor_pos, bevy::color::palettes::css::YELLOW);
+	const ARROW_DISTANCE: f32 = 100.;
+	let dir = (cursor_pos - start_pos).normalize();
+	arrow.translation = (start_pos + dir * ARROW_DISTANCE).extend(900.);
+	arrow.rotation = Quat::from_rotation_z(dir.to_angle());
+
+	// fire taco
 	if stats.tacos_remaining == 0 {
 		return;
 	}
 	if key_button.just_pressed(KeyCode::Space) || mouse_button.just_pressed(MouseButton::Left) {
 		spawn_events.write(SpawnProjectile {
 			projectile_type: Rumor::Taco,
-			position: START_POS,
-			direction: (cursor_pos - START_POS).normalize() * PROJECTILE_SPEED,
+			position: start_pos,
+			direction: (cursor_pos - start_pos).normalize() * PROJECTILE_SPEED,
 			owner: None,
 		});
 		stats.tacos_remaining -= 1;
@@ -135,7 +143,7 @@ pub fn spawn_projectiles(
 			Sprite {
 				image: asset_server.load(match event.projectile_type {
 					Rumor::Tariff => "pile-of-poo-svgrepo-com.png",
-					Rumor::Taco => "taco-svgrepo-com.png",
+					Rumor::Taco => "taco_man3/taco.png",
 				}),
 				custom_size: Some(vec2(50., 50.)),
 				..Default::default()

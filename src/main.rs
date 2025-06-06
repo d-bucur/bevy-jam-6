@@ -2,11 +2,13 @@ use std::collections::VecDeque;
 
 use bevy::asset::AssetMetaCheck;
 use bevy::prelude::*;
+use bevy::sprite::Material2d;
 use bevy_inspector_egui::bevy_egui::EguiPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use rand::prelude::*;
 
 mod animations;
+mod assets;
 mod audio;
 mod config;
 mod dialogue;
@@ -18,9 +20,9 @@ mod shooting;
 mod stonks;
 mod traders;
 mod ui;
-mod assets;
 
 use animations::*;
+use assets::*;
 use audio::*;
 use config::*;
 use dialogue::*;
@@ -32,10 +34,15 @@ use shooting::*;
 use stonks::*;
 use traders::*;
 use ui::*;
-use assets::*;
 
 #[derive(Component)]
 struct Donnie;
+
+#[derive(Component)]
+struct Player;
+
+#[derive(Component)]
+struct PlayerArrowIndicator;
 
 #[derive(Resource)]
 struct GameStats {
@@ -119,7 +126,7 @@ fn main() {
 		.add_event::<OverheadTextRequest>()
 		.insert_resource(DonnieShootingLogic::default())
 		.insert_resource(GameStats::default())
-		.insert_resource(ClearColor(Color::Srgba(Srgba::hex("5E5E5E").unwrap())))
+		.insert_resource(ClearColor(Color::Srgba(Srgba::hex("6b6a7b").unwrap())))
 		.run();
 }
 
@@ -164,30 +171,19 @@ fn setup_entities(
 			},
 			RandomMovement::default(),
 			EdgeBehavior::Wraparound,
-			Animation::<Transform> {
-				progress: 0.,
-				animation_speed: 10.,
-				animations: vec![
-					AnimValue::new(|t, _, n| t.scale.y = n, |p| (-p * 2.).cos() / 2. * 0.1 + 1.),
-					AnimValue::new(|t, o, n| t.rotate_z(-o + n), |p| p.sin() * 0.075),
-					AnimValue::new(|t, o, n| t.translation.y += n - o, |p| (-p * 2.).cos() * 5.),
-				],
-			},
+			wobble_animation(),
 			// Shadow
 			children![
-				(
-					Mesh2d(mesh_handle.clone()),
-					MeshMaterial2d(material_handle.clone()),
-					Transform::from_xyz(0., 0., -2.).with_scale(Vec3::new(1., 0.5, 1.)),
-				),
-				(Text2d::new("Quack!"), OverheadText::default()),
+				shadow(mesh_handle.clone(), material_handle.clone()),
+				overhead_text(""),
 			],
 		));
 	}
 
-	// TODO should refactor with above
+	// TODO refactor common stuff?
 	// Donnie
 	commands.spawn((
+		Name::new("Donnie"),
 		Sprite {
 			image: asset_server.load(donnie_texture_path()),
 			custom_size: Some(vec2(70., 70.)),
@@ -209,25 +205,63 @@ fn setup_entities(
 		},
 		RandomMovement::default(),
 		EdgeBehavior::Wraparound,
-		Animation::<Transform> {
-			progress: 0.,
-			animation_speed: 10.,
-			animations: vec![
-				AnimValue::new(|t, _, n| t.scale.y = n, |p| (-p * 2.).cos() / 2. * 0.1 + 1.),
-				AnimValue::new(|t, o, n| t.rotate_z(-o + n), |p| p.sin() * 0.075),
-				AnimValue::new(|t, o, n| t.translation.y += n - o, |p| (-p * 2.).cos() * 5.),
-			],
-		},
+		wobble_animation(),
 		Donnie,
 		// Shadow
 		children![
-			(
-				Mesh2d(mesh_handle.clone()),
-				MeshMaterial2d(material_handle.clone()),
-				Transform::from_xyz(0., 0., -2.).with_scale(Vec3::new(1., 0.5, 1.)),
-			),
-			(Text2d::new("TARIFFS!"), OverheadText::default())
+			shadow(mesh_handle.clone(), material_handle.clone()),
+			overhead_text("TARIFFS!"),
 		],
+	));
+
+	// Taco truck
+	commands.spawn((
+		Name::new("Taco Truck"),
+		Sprite {
+			image: asset_server.load("taco_man3/taco-truck.png"),
+			custom_size: Some(vec2(70., 70.)),
+			image_mode: SpriteImageMode::Scale(ScalingMode::FitCenter),
+			anchor: bevy::sprite::Anchor::BottomCenter,
+			..Default::default()
+		},
+		Transform {
+			translation: Vec3::new(0., 0., 0.),
+			..Default::default()
+		},
+		Collider {
+			radius: 25.,
+			offset: Vec2::new(0., 14.),
+		},
+		Player,
+		PhysicsBody {
+			velocity: get_trader_random_velocity(),
+			..Default::default()
+		},
+		RandomMovement::default(),
+		EdgeBehavior::Wraparound,
+		wobble_animation(),
+		// Shadow
+		children![
+			shadow(mesh_handle.clone(), material_handle.clone()),
+			// (Text2d::new("TARIFFS!"), OverheadText::default())
+		],
+	));
+
+	// Player arrow
+	commands.spawn((
+		Sprite {
+			image: asset_server.load("taco_man3/right-arrow.png"),
+			custom_size: Some(vec2(50., 50.)),
+			image_mode: SpriteImageMode::Scale(ScalingMode::FitCenter),
+			anchor: bevy::sprite::Anchor::CenterLeft,
+			..Default::default()
+		},
+		// Transform {
+		// 	scale: Vec3::new(2., 1., 1.),
+		// 	..default()
+		// },
+		PlayerArrowIndicator,
+		SkipYSort,
 	));
 }
 
@@ -249,7 +283,11 @@ fn setup_play(
 	// Reset trader statuses?
 }
 
-fn window_setup(mut window: Single<&mut Window>, mut cmds: Commands) {
+fn window_setup(
+	mut window: Single<&mut Window>,
+	mut cmds: Commands,
+	asset_server: Res<AssetServer>,
+) {
 	let scale_factor = window.resolution.scale_factor();
 	window
 		.resolution
@@ -271,6 +309,18 @@ fn window_setup(mut window: Single<&mut Window>, mut cmds: Commands) {
 			},
 			..OrthographicProjection::default_2d()
 		}),
+	));
+	cmds.spawn((
+		Name::new("Background"),
+		Sprite {
+			image: asset_server.load("taco_man3/background.png"),
+			custom_size: Some(vec2(WIDTH * scale_factor, HEIGHT * scale_factor)),
+			// image_mode: SpriteImageMode::Scale(ScalingMode::FitCenter),
+			anchor: bevy::sprite::Anchor::Center,
+			..Default::default()
+		},
+		Transform::from_xyz(0., 0., -900.),
+		SkipYSort,
 	));
 }
 
@@ -321,8 +371,10 @@ fn handle_collisions(
 
 			// Spawn chain reaction bullets
 			cmds.entity(rumor_entity).despawn();
-			let position = trader_transform.translation.xy();
-			let hit_direction = -(position - projectile_transform.translation.xy()).normalize();
+			let position = projectile_transform.translation.xy();
+			let hit_direction = (trader_transform.translation.xy()
+				- projectile_transform.translation.xy())
+			.normalize();
 			let pattern = UniformPattern { bullet_count: 3 };
 			for dir in pattern.direction_iter(hit_direction) {
 				spawn_events.write(SpawnProjectile {
@@ -341,4 +393,38 @@ fn handle_collisions(
 			check_rumor_vs_trader(collision.entity2, collision.entity1);
 		}
 	}
+}
+
+fn wobble_animation() -> Animation<Transform> {
+	Animation::<Transform> {
+		progress: 0.,
+		animation_speed: 10.,
+		animations: vec![
+			AnimValue::new(|t, _, n| t.scale.y = n, |p| (-p * 2.).cos() / 2. * 0.1 + 1.),
+			AnimValue::new(|t, o, n| t.rotate_z(-o + n), |p| p.sin() * 0.075),
+			AnimValue::new(|t, o, n| t.translation.y += n - o, |p| (-p * 2.).cos() * 5.),
+		],
+	}
+}
+
+fn shadow(mesh: Handle<Mesh>, material: Handle<impl Material2d>) -> impl Bundle {
+	(
+		Mesh2d(mesh.clone()),
+		MeshMaterial2d(material.clone()),
+		Transform::from_xyz(0., 0., -2.).with_scale(Vec3::new(1., 0.5, 1.)),
+	)
+}
+
+fn overhead_text(text: impl Into<String>) -> impl Bundle {
+	(
+		Text2d::new(text),
+		OverheadText::default(),
+		TextColor(Color::Srgba(Srgba::hex("ffffff").unwrap())),
+		Transform::from_xyz(0., -25., 10.),
+		TextLayout::new_with_justify(JustifyText::Center),
+		TextFont {
+			font_size: 17.,
+			..default()
+		}
+	)
 }

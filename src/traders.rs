@@ -51,7 +51,7 @@ pub fn update_trader_status(
 					overhead_events.write(OverheadTextRequest {
 						attached_to: event.entity,
 						text: Some(random_dialogue(&BEARISH).to_string()),
-						duration_sec: Some(1.),
+						duration_sec: Some(1.2),
 					});
 				}
 			}
@@ -61,7 +61,7 @@ pub fn update_trader_status(
 					overhead_events.write(OverheadTextRequest {
 						attached_to: event.entity,
 						text: Some(random_dialogue(&BULLISH).to_string()),
-						duration_sec: Some(1.),
+						duration_sec: Some(1.2),
 					});
 				}
 			}

@@ -4,7 +4,7 @@ pub const BULLISH: [&str; 11] = [
 	"PHEW",
 	"YAY",
 	"STONKS UP",
-	"FART OF THE DEAL",
+	"FART OF\nTHE DEAL",
 	"TACOed",
 	"LIBERATED",
 	"PAUSED LOL",
@@ -23,7 +23,7 @@ pub const BEARISH: [&str; 10] = [
 	"CE TAMPIT",
 	"STONKS DOWN",
 	"WTF",
-	"MARKET CRASH LOL",
+	"MARKET CRASH\nLOL",
 	"RECIPROCATED",
 ];
 
@@ -65,7 +65,7 @@ pub fn random_tariff() -> String {
 	let mut rng = rand::rng();
 	let value = TARIFF_VALUES[rng.random_range(..TARIFF_VALUES.len())];
 	let target = TARIFF_TARGETS[rng.random_range(..TARIFF_TARGETS.len())];
-	format!("{}% TARIFFS ON {}", value, target)
+	format!("{}% TARIFFS\nON {}", value, target)
 }
 
 #[derive(Event)]

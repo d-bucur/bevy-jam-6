@@ -27,6 +27,14 @@ fn setup_main_menu(mut commands: Commands) {
 			StateScoped(GameState::Menu),
 		))
 		.with_children(|parent| {
+			parent.spawn((
+				Text::new("Donnie's Tacos"),
+				TextFont {
+					font_size: 100.,
+					..default()
+				},
+				TextShadow::default(),
+			));
 			parent
 				.spawn(make_button("Play"))
 				.observe(change_state(GameState::PlaySetup));

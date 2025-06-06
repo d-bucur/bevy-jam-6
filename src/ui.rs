@@ -134,7 +134,14 @@ pub fn ui_setup_gameover_screen(mut commands: Commands, stonks: Res<StonksTradin
 			StateScoped(GameState::GameOver),
 		))
 		.with_children(|parent| {
-			parent.spawn(Text::new(format!("Profit: {}", stonks.returns_total)));
+			parent.spawn((
+				Text::new(format!("Profit: {}", stonks.returns_total)),
+				TextFont {
+					font_size: 100.,
+					..default()
+				},
+				TextShadow::default(),
+			));
 			parent
 				.spawn(make_button("Play"))
 				.observe(change_state(GameState::PlaySetup));

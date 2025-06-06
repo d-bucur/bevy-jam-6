@@ -14,6 +14,9 @@ pub enum RandomMovement {
 	Idle(Timer),
 }
 
+#[derive(Component)]
+pub struct SkipYSort;
+
 impl Default for RandomMovement {
 	fn default() -> Self {
 		if rand::random_bool((IDLE_TIME / MOVEMENT_TIME) as f64) {
@@ -91,7 +94,7 @@ pub fn animations(
 	}
 }
 
-pub fn y_sort(mut q: Query<&mut Transform, With<Sprite>>) {
+pub fn y_sort(mut q: Query<&mut Transform, (With<Sprite>, Without<SkipYSort>)>) {
 	for mut t in q.iter_mut() {
 		t.translation.z = -t.translation.y;
 	}
