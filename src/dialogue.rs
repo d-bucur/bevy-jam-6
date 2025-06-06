@@ -11,10 +11,10 @@ pub const BULLISH: [&str; 11] = [
 	"CHICKEN",
 	"BOK BOK",
 	"CRINGE",
-	"MY 401K",
+	"LIBS GOT\nOWNED",
 ];
 
-pub const BEARISH: [&str; 10] = [
+pub const BEARISH: [&str; 11] = [
 	"O NO",
 	"LAME",
 	"MEIN GOTT",
@@ -25,6 +25,7 @@ pub const BEARISH: [&str; 10] = [
 	"WTF",
 	"MARKET CRASH\nLOL",
 	"RECIPROCATED",
+	"MY 401K",
 ];
 
 pub const TARIFF_VALUES: [&str; 10] = [

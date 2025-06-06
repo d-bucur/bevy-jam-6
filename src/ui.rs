@@ -1,7 +1,10 @@
 use crate::*;
 
 #[derive(Component)]
-pub struct GameStatsText;
+pub struct ProfitText;
+
+#[derive(Component)]
+pub struct TimeText;
 
 pub struct UIIngamePlugin {}
 
@@ -27,9 +30,10 @@ pub fn setup_game_ui(mut commands: Commands) {
 				width: Val::Percent(100.0),
 				height: Val::Percent(100.0),
 				align_items: AlignItems::Start,
-				justify_content: JustifyContent::Start,
-				flex_direction: FlexDirection::Column,
-				row_gap: Val::Px(20.0),
+				justify_content: JustifyContent::End,
+				flex_direction: FlexDirection::Row,
+				column_gap: Val::Px(100.0),
+				padding: UiRect::vertical(Val::Px(25.)).with_right(Val::Px(200.)),
 				..default()
 			},
 			// Don't block picking events for other UI roots.
@@ -39,11 +43,31 @@ pub fn setup_game_ui(mut commands: Commands) {
 		))
 		.with_children(|parent| {
 			// parent.spawn((Text::new("Stonks go here"), StonksUiText));
-			parent.spawn((Text::new("Stats go here"), GameStatsText));
+			parent.spawn((
+				Text::new("Money"),
+				ProfitText,
+				TextFont {
+					font_size: 75.,
+					..default()
+				},
+				TextShadow::default(),
+			));
+			parent.spawn((
+				Text::new("Time"),
+				TimeText,
+				TextFont {
+					font_size: 75.,
+					..default()
+				},
+				TextShadow::default(),
+			));
 		});
 }
 
-pub fn ui_update_debug(mut query: Query<&mut Text, With<StonksUiText>>, stonks: Res<StonksTrading>) {
+pub fn ui_update_debug(
+	mut query: Query<&mut Text, With<StonksUiText>>,
+	stonks: Res<StonksTrading>,
+) {
 	// let mut text = query.single_mut().unwrap();
 	// **text = format!(
 	// 	"Stonks price: {}\nStonks owned: {}\nAverage buy price: {}\nReturns: {}",
@@ -116,16 +140,19 @@ pub fn ui_update(
 }
 
 pub fn ui_update_game_stats(
-	mut text_q: Query<&mut Text, With<GameStatsText>>,
+	mut time_q: Single<&mut Text, With<TimeText>>,
+	mut profit_q: Single<&mut Text, (With<ProfitText>, Without<TimeText>)>,
 	stonks: Res<StonksTrading>,
 	stats: Res<GameStats>,
 ) {
-	let mut text = text_q.single_mut().unwrap();
-	**text = format!(
-		"Time: {}\nProfit: {}",
-		stats.time_remaining.remaining_secs() as u32,
-		stonks.returns_total,
-	);
+	time_q.0 = format!("{}", stats.time_remaining.remaining_secs() as u32);
+	profit_q.0 = format!("${}", separated_number(stonks.returns_total));
+	// let mut text = text_q.single_mut().unwrap();
+	// **text = format!(
+	// 	"Time: {}\nProfit: {}",
+	// 	stats.time_remaining.remaining_secs() as u32,
+	// 	stonks.returns_total,
+	// );
 }
 
 pub fn ui_setup_gameover_screen(mut commands: Commands, stonks: Res<StonksTrading>) {
@@ -140,6 +167,7 @@ pub fn ui_setup_gameover_screen(mut commands: Commands, stonks: Res<StonksTradin
 				align_items: AlignItems::Center,
 				justify_content: JustifyContent::Center,
 				flex_direction: FlexDirection::Column,
+				padding: UiRect::vertical(Val::Px(200.)),
 				row_gap: Val::Px(20.0),
 				..default()
 			},
@@ -150,7 +178,14 @@ pub fn ui_setup_gameover_screen(mut commands: Commands, stonks: Res<StonksTradin
 		))
 		.with_children(|parent| {
 			parent.spawn((
-				Text::new(format!("Profit: {}", stonks.returns_total)),
+				Text::new("Congratulations!\nYou are now richer by"),
+				TextLayout {
+					justify: JustifyText::Center,
+					..default()
+				},
+			));
+			parent.spawn((
+				Text::new(format!("${}", separated_number(stonks.returns_total))),
 				TextFont {
 					font_size: 100.,
 					..default()
@@ -158,10 +193,28 @@ pub fn ui_setup_gameover_screen(mut commands: Commands, stonks: Res<StonksTradin
 				TextShadow::default(),
 			));
 			parent
-				.spawn(make_button("Play"))
+				.spawn(make_button("Restart"))
 				.observe(change_state(GameState::PlaySetup));
 			parent
 				.spawn(make_button("Main Menu"))
 				.observe(change_state(GameState::Menu));
 		});
+}
+
+fn separated_number(n: i64) -> String {
+	// https://stackoverflow.com/a/67834588/3510803
+	let mut num = n
+		.abs()
+		.to_string()
+		.as_bytes()
+		.rchunks(3)
+		.rev()
+		.map(str::from_utf8)
+		.collect::<Result<Vec<&str>, _>>()
+		.unwrap()
+		.join("."); // separator
+	if n < 0 {
+		num = format!("-{num}")
+	}
+	num
 }

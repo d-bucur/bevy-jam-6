@@ -57,6 +57,7 @@ pub fn make_ui_root(name: impl Into<Cow<'static, str>>) -> impl Bundle {
 			align_items: AlignItems::Center,
 			justify_content: JustifyContent::Center,
 			flex_direction: FlexDirection::Column,
+			padding: UiRect::vertical(Val::Px(50.)),
 			row_gap: Val::Px(20.0),
 			..default()
 		},
@@ -90,7 +91,7 @@ pub fn make_button(text: impl Into<String>) -> impl Bundle {
 			Node {
 				width: Val::Px(200.0),
 				height: Val::Px(65.0),
-				border: UiRect::all(Val::Px(5.0)),
+				border: UiRect::all(Val::Px(3.0)),
 				// horizontally center child text
 				justify_content: JustifyContent::Center,
 				// vertically center child text
@@ -141,7 +142,19 @@ fn apply_button_styles(
 fn setup_paused(mut commands: Commands) {
 	commands
 		.spawn((
-			make_ui_root("Paused"),
+			Node {
+				position_type: PositionType::Absolute,
+				width: Val::Percent(100.0),
+				height: Val::Percent(100.0),
+				align_items: AlignItems::Center,
+				justify_content: JustifyContent::Center,
+				flex_direction: FlexDirection::Column,
+				padding: UiRect::vertical(Val::Px(200.)),
+				row_gap: Val::Px(20.0),
+				..default()
+			},
+			// Don't block picking events for other UI roots.
+			Pickable::IGNORE,
 			GlobalZIndex(2),
 			StateScoped(GameState::Paused),
 		))

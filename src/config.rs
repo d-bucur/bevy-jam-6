@@ -9,7 +9,7 @@ pub const STONKS_PER_BEARISH: u32 = 3;
 pub const STONKS_PER_NEUTRAL: u32 = 5;
 pub const STONKS_PER_BULLISH: u32 = 7;
 pub const STONKS_DATA_POINTS: u32 = 300;
-pub const STONKS_PER_BUY_ACTION: u32 = 10;
+pub const STONKS_PER_BUY_ACTION: u32 = 300;
 
 pub const TRADER_COUNT: u32 = 15;
 pub const PROJECTILE_SPEED: f32 = 7.;
