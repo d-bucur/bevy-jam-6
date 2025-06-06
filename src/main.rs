@@ -48,13 +48,11 @@ struct PlayerArrowIndicator;
 struct GameStats {
 	total_projectiles_launched: u32,
 	time_remaining: Timer,
-	tacos_remaining: u32,
 }
 
 impl Default for GameStats {
 	fn default() -> Self {
 		Self {
-			tacos_remaining: 10,
 			total_projectiles_launched: 0,
 			time_remaining: Timer::from_seconds(60., TimerMode::Once),
 		}
@@ -88,7 +86,7 @@ fn main() {
 			FixedUpdate,
 			(
 				check_game_pause,
-				(check_game_over, player_shooting)
+				(check_game_over, charge_player_tacos, player_shooting)
 					.chain()
 					.run_if(in_state(GameState::Playing)),
 				(
@@ -246,6 +244,7 @@ fn setup_entities(
 			},
 			RandomMovement::default(),
 			EdgeBehavior::Wraparound,
+			PlayerShootingLogic::default(),
 			wobble_animation(),
 			// Shadow
 			children![

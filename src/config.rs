@@ -16,6 +16,9 @@ pub const PROJECTILE_SPEED: f32 = 7.;
 pub const MOVEMENT_TIME: f32 = 5.;
 pub const IDLE_TIME: f32 = 1.;
 
+pub const MAX_TACOS: u32 = 3;
+pub const TACO_CHARGE_TIME: f32 = 1.;
+
 pub fn get_trader_random_velocity() -> Vec2 {
 	const TRADER_MAX_VELOCITY: f32 = 2.0;
 	let angle = rand::random_range(0.0..PI) * 2.;

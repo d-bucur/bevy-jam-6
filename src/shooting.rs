@@ -35,6 +35,23 @@ pub struct Projectile {
 #[derive(Event)]
 pub struct RumorJustShot;
 
+#[derive(Component)]
+pub struct PlayerShootingLogic {
+	pub timer: Timer,
+	pub tacos_left: u32,
+	pub max_tacos: u32,
+}
+
+impl Default for PlayerShootingLogic {
+	fn default() -> Self {
+		Self {
+			timer: Timer::from_seconds(TACO_CHARGE_TIME, TimerMode::Repeating),
+			tacos_left: MAX_TACOS,
+			max_tacos: MAX_TACOS,
+		}
+	}
+}
+
 pub trait BulletPattern {
 	fn direction_iter(self, reference_dir: Vec2) -> impl Iterator<Item = Vec2>;
 }
@@ -53,6 +70,7 @@ impl BulletPattern for UniformPattern {
 	}
 }
 
+// Too big. Should break up
 pub fn player_shooting(
 	key_button: Res<ButtonInput<KeyCode>>,
 	mouse_button: Res<ButtonInput<MouseButton>>,
@@ -61,6 +79,7 @@ pub fn player_shooting(
 	window: Single<&Window>,
 	camera: Single<(&Camera, &GlobalTransform)>,
 	player: Single<(&Transform, Entity), With<Player>>,
+	mut shoot_logic: Single<&mut PlayerShootingLogic>,
 	mut arrow: Single<&mut Transform, (With<PlayerArrowIndicator>, Without<Player>)>,
 	mut stats: ResMut<GameStats>,
 	mut cmds: Commands,
@@ -82,23 +101,35 @@ pub fn player_shooting(
 	arrow.rotation = Quat::from_rotation_z(dir.to_angle());
 
 	// fire taco
-	if stats.tacos_remaining == 0 {
+	if shoot_logic.tacos_left == 0 {
 		return;
 	}
-	if key_button.just_pressed(KeyCode::Space) || mouse_button.just_pressed(MouseButton::Left) {
+	if mouse_button.just_pressed(MouseButton::Left) {
 		spawn_events.write(SpawnProjectile {
 			projectile_type: Rumor::Taco,
 			position: start_pos,
 			direction: (cursor_pos - start_pos).normalize() * PROJECTILE_SPEED,
 			owner: None,
 		});
-		stats.tacos_remaining -= 1;
+		shoot_logic.tacos_left -= 1;
 		cmds.trigger_targets(RumorJustShot, player.1);
 	}
 }
 
+pub fn charge_player_tacos(
+	mut q: Single<&mut PlayerShootingLogic>,
+	time: Res<Time>,
+) {
+	if q.tacos_left >= q.max_tacos {
+		return;
+	}
+	if q.timer.tick(time.delta()).just_finished() {
+		q.tacos_left = (q.tacos_left + 1).clamp(0, q.max_tacos);
+	}
+}
+
 pub fn donnie_shooting(
-	// TODO should just put in Donnie entity?
+	// TODO should combine Donnie with DonnieShootingLogic?
 	mut query: Query<(&Transform, Entity, &mut Sprite), With<Donnie>>,
 	mut shooting_logic: ResMut<DonnieShootingLogic>,
 	traders_q: Query<&Transform, With<Trader>>,

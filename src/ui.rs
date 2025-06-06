@@ -107,9 +107,8 @@ pub fn ui_update_game_stats(
 ) {
 	let mut text = query.single_mut().unwrap();
 	**text = format!(
-		"Time: {}\nTacos: {}",
-		stats.time_remaining.remaining_secs(),
-		stats.tacos_remaining,
+		"Time: {}",
+		stats.time_remaining.remaining_secs() as u32,
 	);
 }
 
