@@ -124,8 +124,9 @@ fn main() {
 		.add_event::<OverheadTextRequest>()
 		.insert_resource(DonnieShootingLogic::default())
 		.insert_resource(GameStats::default())
-		.insert_resource(ClearColor(Color::Srgba(Srgba::hex("6b6a7b").unwrap())))
 		.insert_resource(AudioLimitCounters([1, 3, 3, 3]))
+		.insert_resource(VolumeSettings::default())
+		.insert_resource(ClearColor(Color::Srgba(Srgba::hex("6b6a7b").unwrap())))
 		.add_observer(on_stonks_notification)
 		.run();
 }

@@ -2,14 +2,16 @@ use crate::*;
 use bevy::{
 	audio::*,
 	ecs::{component::HookContext, world::DeferredWorld},
+	platform::collections::HashMap,
 };
 
-#[derive(Clone, Copy)]
-enum AudioType {
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub enum AudioType {
 	DonnieVoice,
 	TraderStatusChange,
 	ProjectileShot,
 	StonksNotifcation,
+	Music,
 }
 
 #[derive(Resource, Deref, DerefMut)]
@@ -19,6 +21,27 @@ pub struct AudioLimitCounters(pub [u32; 4]);
 #[component(on_add = on_audio_type_added)]
 #[component(on_remove = on_audio_type_removed)]
 struct LimitedAudio(AudioType);
+
+#[derive(Resource, Deref)]
+pub struct VolumeSettings {
+	per_channel: HashMap<AudioType, f32>,
+}
+
+impl Default for VolumeSettings {
+	fn default() -> Self {
+		const DEFAULT_VOLUME: f32 = 1.0;
+		Self {
+			per_channel: [
+				(AudioType::DonnieVoice, DEFAULT_VOLUME),
+				(AudioType::TraderStatusChange, DEFAULT_VOLUME),
+				(AudioType::ProjectileShot, DEFAULT_VOLUME),
+				(AudioType::StonksNotifcation, DEFAULT_VOLUME),
+				(AudioType::Music, DEFAULT_VOLUME),
+			]
+			.into(),
+		}
+	}
+}
 
 fn on_audio_type_added(mut world: DeferredWorld, ctx: HookContext) {
 	let audio_type = world.get::<LimitedAudio>(ctx.entity).unwrap().0;
@@ -32,12 +55,17 @@ fn on_audio_type_removed(mut world: DeferredWorld, ctx: HookContext) {
 	counters[audio_type as usize] += 1;
 }
 
-pub fn setup_audio(asset_server: Res<AssetServer>, mut commands: Commands) {
+pub fn setup_audio(
+	asset_server: Res<AssetServer>,
+	mut commands: Commands,
+	volume: Res<VolumeSettings>,
+) {
 	// soundtrack
 	commands.spawn((
 		AudioPlayer::new(asset_server.load("audio/music/1161090_Funny-Cat.mp3")),
 		PlaybackSettings {
 			mode: PlaybackMode::Loop,
+			volume: Volume::Linear(1.0 * volume[&AudioType::Music]),
 			..default()
 		},
 	));
@@ -48,6 +76,7 @@ pub fn on_donnie_shot(
 	mut cmds: Commands,
 	asset_server: ResMut<AssetServer>,
 	audio_counters: Res<AudioLimitCounters>,
+	volume: Res<VolumeSettings>,
 ) {
 	// info!("audio_projectile_shot.target: {:?}", trigger.target());
 	if audio_counters[AudioType::DonnieVoice as usize] == 0 || rand::random_bool(0.7) {
@@ -57,7 +86,7 @@ pub fn on_donnie_shot(
 		AudioPlayer::new(asset_server.load(random_string(&DONNIE_VOICE_LINES))),
 		PlaybackSettings {
 			mode: PlaybackMode::Despawn,
-			volume: Volume::Linear(0.7),
+			volume: Volume::Linear(0.7 * volume[&AudioType::DonnieVoice]),
 			..default()
 		},
 		LimitedAudio(AudioType::DonnieVoice),
@@ -69,6 +98,7 @@ pub fn on_trader_status_change(
 	asset_server: ResMut<AssetServer>,
 	mut cmds: Commands,
 	audio_counters: Res<AudioLimitCounters>,
+	volume: Res<VolumeSettings>,
 ) {
 	if audio_counters[AudioType::TraderStatusChange as usize] == 0 {
 		return;
@@ -84,7 +114,7 @@ pub fn on_trader_status_change(
 			AudioPlayer::new(asset_server.load(path)),
 			PlaybackSettings {
 				mode: PlaybackMode::Despawn,
-				volume: Volume::Linear(1.),
+				volume: Volume::Linear(1. * volume[&AudioType::TraderStatusChange]),
 				..default()
 			},
 			LimitedAudio(AudioType::TraderStatusChange),
@@ -97,6 +127,7 @@ pub fn on_projectile_shot(
 	asset_server: ResMut<AssetServer>,
 	mut cmds: Commands,
 	audio_counters: Res<AudioLimitCounters>,
+	volume: Res<VolumeSettings>,
 ) {
 	if audio_counters[AudioType::ProjectileShot as usize] == 0 {
 		return;
@@ -105,7 +136,7 @@ pub fn on_projectile_shot(
 		AudioPlayer::new(asset_server.load(random_string(&PLOPS))),
 		PlaybackSettings {
 			mode: PlaybackMode::Despawn,
-			volume: Volume::Linear(1.),
+			volume: Volume::Linear(1. * volume[&AudioType::ProjectileShot]),
 			..default()
 		},
 		LimitedAudio(AudioType::ProjectileShot),
@@ -117,6 +148,7 @@ pub fn on_stonks_notification(
 	asset_server: ResMut<AssetServer>,
 	mut cmds: Commands,
 	audio_counters: Res<AudioLimitCounters>,
+	volume: Res<VolumeSettings>,
 ) {
 	if audio_counters[AudioType::StonksNotifcation as usize] == 0 {
 		return;
@@ -128,10 +160,13 @@ pub fn on_stonks_notification(
 		}))),
 		PlaybackSettings {
 			mode: PlaybackMode::Despawn,
-			volume: Volume::Linear(match trigger.event() {
-				StonksPriceNotification::LOW => 0.5,
-				StonksPriceNotification::HIGH => 0.9,
-			}),
+			volume: Volume::Linear(
+				volume[&AudioType::StonksNotifcation]
+					* match trigger.event() {
+						StonksPriceNotification::LOW => 0.5,
+						StonksPriceNotification::HIGH => 0.9,
+					},
+			),
 			..default()
 		},
 		LimitedAudio(AudioType::StonksNotifcation),
