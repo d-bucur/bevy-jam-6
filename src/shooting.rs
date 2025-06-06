@@ -32,6 +32,9 @@ pub struct Projectile {
 	pub owner: Option<Entity>,
 }
 
+#[derive(Event)]
+pub struct RumorJustShot;
+
 pub trait BulletPattern {
 	fn direction_iter(self, reference_dir: Vec2) -> impl Iterator<Item = Vec2>;
 }
@@ -57,9 +60,10 @@ pub fn player_shooting(
 	mut gizmos: Gizmos,
 	window: Single<&Window>,
 	camera: Single<(&Camera, &GlobalTransform)>,
-	player: Single<&Transform, With<Player>>,
+	player: Single<(&Transform, Entity), With<Player>>,
 	mut arrow: Single<&mut Transform, (With<PlayerArrowIndicator>, Without<Player>)>,
 	mut stats: ResMut<GameStats>,
+	mut cmds: Commands,
 ) {
 	// draw shooting line
 	let Some(cursor_pos) = window
@@ -70,7 +74,7 @@ pub fn player_shooting(
 	};
 
 	// not sure if should use arrow or gizmo line. keeping both for now
-	let start_pos: Vec2 = player.translation.xy();
+	let start_pos: Vec2 = player.0.translation.xy();
 	gizmos.line_2d(start_pos, cursor_pos, bevy::color::palettes::css::YELLOW);
 	const ARROW_DISTANCE: f32 = 100.;
 	let dir = (cursor_pos - start_pos).normalize();
@@ -89,6 +93,7 @@ pub fn player_shooting(
 			owner: None,
 		});
 		stats.tacos_remaining -= 1;
+		cmds.trigger_targets(RumorJustShot, player.1);
 	}
 }
 
@@ -101,6 +106,7 @@ pub fn donnie_shooting(
 	mut spawn_events: EventWriter<SpawnProjectile>,
 	mut overhead_events: EventWriter<OverheadTextRequest>,
 	asset_server: Res<AssetServer>,
+	mut cmds: Commands,
 ) {
 	if !shooting_logic
 		.shooting_timer
@@ -130,6 +136,7 @@ pub fn donnie_shooting(
 		duration_sec: Some(1.5),
 	});
 	sprite.image = asset_server.load(donnie_texture_path());
+	cmds.trigger_targets(RumorJustShot, entity);
 }
 
 pub fn spawn_projectiles(

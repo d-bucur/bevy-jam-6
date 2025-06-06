@@ -55,7 +55,7 @@ pub const TARIFF_TARGETS: [&str; 12] = [
 	"ITCH.IO",
 ];
 
-pub fn random_dialogue(a: &[&'static str]) -> &'static str {
+pub fn random_string(a: &[&'static str]) -> &'static str {
 	let mut rng = rand::rng();
 	let idx = rng.random_range(..a.len());
 	a[idx]

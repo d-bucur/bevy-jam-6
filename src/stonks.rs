@@ -22,7 +22,17 @@ impl StonksTrading {
 #[derive(Component)]
 pub struct StonksUiText;
 
-pub fn update_stonks_price(mut stonks: ResMut<StonksTrading>, query: Query<&Trader>) {
+#[derive(Event, PartialEq, Eq)]
+pub enum StonksPriceNotification {
+	HIGH,
+	LOW,
+}
+
+pub fn update_stonks_price(
+	mut stonks: ResMut<StonksTrading>,
+	query: Query<&Trader>,
+	mut cmds: Commands,
+) {
 	let counts = query
 		.iter()
 		.map(|t| t.status)
@@ -38,7 +48,27 @@ pub fn update_stonks_price(mut stonks: ResMut<StonksTrading>, query: Query<&Trad
 	if stonks.price_history.len() > STONKS_DATA_POINTS as usize {
 		stonks.price_history.pop_front();
 	}
+
 	stonks.price_history.push_back(price_current);
+
+	let (low, high) = notif_thresholds();
+	if price_current < low {
+		cmds.trigger(StonksPriceNotification::LOW);
+	}
+	if price_current > high {
+		cmds.trigger(StonksPriceNotification::HIGH);
+	}
+}
+
+const fn notif_thresholds() -> (u32, u32) {
+	const NOTIF_THRESHOLD: f32 = 0.8;
+	const LOWEST: f32 = (STONKS_PER_BEARISH * TRADER_COUNT) as f32;
+	const HIGHEST: f32 = (STONKS_PER_BULLISH * TRADER_COUNT) as f32;
+	const DIFF: f32 = HIGHEST - LOWEST;
+	(
+		(DIFF * (1. - NOTIF_THRESHOLD) + LOWEST) as u32,
+		(DIFF * NOTIF_THRESHOLD + LOWEST) as u32,
+	)
 }
 
 pub fn player_investing(key_input: Res<ButtonInput<KeyCode>>, mut stonks: ResMut<StonksTrading>) {

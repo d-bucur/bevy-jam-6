@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 // TODO progress without overflow
+/// Like a proto tween, but needs some more work
 #[derive(Component)]
 pub struct Animation<T> {
 	pub progress: f32,

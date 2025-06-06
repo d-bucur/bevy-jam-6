@@ -127,6 +127,8 @@ fn main() {
 		.insert_resource(DonnieShootingLogic::default())
 		.insert_resource(GameStats::default())
 		.insert_resource(ClearColor(Color::Srgba(Srgba::hex("6b6a7b").unwrap())))
+		.insert_resource(AudioLimitCounters([1, 3, 3, 1]))
+		.add_observer(on_stonks_notification)
 		.run();
 }
 
@@ -144,23 +146,60 @@ fn setup_entities(
 
 	// Traders
 	for _ in 0..TRADER_COUNT {
-		commands.spawn((
+		commands
+			.spawn((
+				Sprite {
+					image: asset_server.load(investor_texture_path()),
+					custom_size: Some(vec2(50., 50.)),
+					image_mode: SpriteImageMode::Scale(ScalingMode::FitCenter),
+					anchor: bevy::sprite::Anchor::BottomCenter,
+					..Default::default()
+				},
+				Transform {
+					translation: Vec3::new(
+						rng.random_range(-WIDTH..WIDTH),
+						rng.random_range(-HEIGHT..HEIGHT),
+						0.,
+					),
+					..Default::default()
+				},
+				Trader::default(),
+				Collider {
+					radius: 25.,
+					offset: Vec2::new(0., 14.),
+				},
+				PhysicsBody {
+					velocity: get_trader_random_velocity(),
+					..Default::default()
+				},
+				RandomMovement::default(),
+				EdgeBehavior::Wraparound,
+				wobble_animation(),
+				// Shadow
+				children![
+					shadow(mesh_handle.clone(), material_handle.clone()),
+					overhead_text(""),
+				],
+			))
+			.observe(audio::on_trader_status_change);
+	}
+
+	// TODO refactor common stuff?
+	// Donnie
+	commands
+		.spawn((
+			Name::new("Donnie"),
 			Sprite {
-				image: asset_server.load(investor_texture_path()),
-				custom_size: Some(vec2(50., 50.)),
+				image: asset_server.load(donnie_texture_path()),
+				custom_size: Some(vec2(70., 70.)),
 				image_mode: SpriteImageMode::Scale(ScalingMode::FitCenter),
 				anchor: bevy::sprite::Anchor::BottomCenter,
 				..Default::default()
 			},
 			Transform {
-				translation: Vec3::new(
-					rng.random_range(-WIDTH..WIDTH),
-					rng.random_range(-HEIGHT..HEIGHT),
-					0.,
-				),
+				translation: Vec3::new(0., HEIGHT, 0.),
 				..Default::default()
 			},
-			Trader::default(),
 			Collider {
 				radius: 25.,
 				offset: Vec2::new(0., 14.),
@@ -172,80 +211,49 @@ fn setup_entities(
 			RandomMovement::default(),
 			EdgeBehavior::Wraparound,
 			wobble_animation(),
+			Donnie,
 			// Shadow
 			children![
 				shadow(mesh_handle.clone(), material_handle.clone()),
-				overhead_text(""),
+				overhead_text("TARIFFS!"),
 			],
-		));
-	}
-
-	// TODO refactor common stuff?
-	// Donnie
-	commands.spawn((
-		Name::new("Donnie"),
-		Sprite {
-			image: asset_server.load(donnie_texture_path()),
-			custom_size: Some(vec2(70., 70.)),
-			image_mode: SpriteImageMode::Scale(ScalingMode::FitCenter),
-			anchor: bevy::sprite::Anchor::BottomCenter,
-			..Default::default()
-		},
-		Transform {
-			translation: Vec3::new(0., HEIGHT, 0.),
-			..Default::default()
-		},
-		Collider {
-			radius: 25.,
-			offset: Vec2::new(0., 14.),
-		},
-		PhysicsBody {
-			velocity: get_trader_random_velocity(),
-			..Default::default()
-		},
-		RandomMovement::default(),
-		EdgeBehavior::Wraparound,
-		wobble_animation(),
-		Donnie,
-		// Shadow
-		children![
-			shadow(mesh_handle.clone(), material_handle.clone()),
-			overhead_text("TARIFFS!"),
-		],
-	));
+		))
+		.observe(audio::on_donnie_shot);
 
 	// Taco truck
-	commands.spawn((
-		Name::new("Taco Truck"),
-		Sprite {
-			image: asset_server.load("taco_man3/taco-truck.png"),
-			custom_size: Some(vec2(70., 70.)),
-			image_mode: SpriteImageMode::Scale(ScalingMode::FitCenter),
-			anchor: bevy::sprite::Anchor::BottomCenter,
-			..Default::default()
-		},
-		Transform {
-			translation: Vec3::new(0., 0., 0.),
-			..Default::default()
-		},
-		Collider {
-			radius: 25.,
-			offset: Vec2::new(0., 14.),
-		},
-		Player,
-		PhysicsBody {
-			velocity: get_trader_random_velocity(),
-			..Default::default()
-		},
-		RandomMovement::default(),
-		EdgeBehavior::Wraparound,
-		wobble_animation(),
-		// Shadow
-		children![
-			shadow(mesh_handle.clone(), material_handle.clone()),
-			// (Text2d::new("TARIFFS!"), OverheadText::default())
-		],
-	));
+	commands
+		.spawn((
+			Name::new("Taco Truck"),
+			Sprite {
+				image: asset_server.load("taco_man3/taco-truck.png"),
+				custom_size: Some(vec2(70., 70.)),
+				image_mode: SpriteImageMode::Scale(ScalingMode::FitCenter),
+				anchor: bevy::sprite::Anchor::BottomCenter,
+				..Default::default()
+			},
+			Transform {
+				translation: Vec3::new(0., 0., 0.),
+				..Default::default()
+			},
+			Collider {
+				radius: 25.,
+				offset: Vec2::new(0., 14.),
+			},
+			Player,
+			PhysicsBody {
+				velocity: get_trader_random_velocity(),
+				..Default::default()
+			},
+			RandomMovement::default(),
+			EdgeBehavior::Wraparound,
+			wobble_animation(),
+			// Shadow
+			children![
+				shadow(mesh_handle.clone(), material_handle.clone()),
+				// (Text2d::new("TARIFFS!"), OverheadText::default())
+			],
+		))
+		.observe(audio::on_projectile_shot);
 
 	// Player arrow
 	commands.spawn((
@@ -357,13 +365,17 @@ fn handle_collisions(
 			}
 
 			// Change trader status
-			trader.status = match rumor {
+			let new_status = match rumor {
 				Rumor::Tariff => TraderStatus::Bearish,
 				Rumor::Taco => TraderStatus::Bullish,
 			};
-			trader_changes.write(TraderChange {
+			let change_event = TraderChange {
 				entity: trader_entity,
-			});
+				prev: trader.status,
+				new: new_status,
+			};
+			trader_changes.write(change_event.clone());
+			trader.status = new_status;
 			cmds.entity(trader_entity).insert((
 				TraderStatusTimer(Timer::from_seconds(5., TimerMode::Once)),
 				TraderRestTimer(Timer::from_seconds(0.5, TimerMode::Once)),
@@ -425,6 +437,6 @@ fn overhead_text(text: impl Into<String>) -> impl Bundle {
 		TextFont {
 			font_size: 17.,
 			..default()
-		}
+		},
 	)
 }
