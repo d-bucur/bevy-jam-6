@@ -65,7 +65,7 @@ pub fn setup_audio(
 		AudioPlayer::new(asset_server.load("audio/music/1161090_Funny-Cat.mp3")),
 		PlaybackSettings {
 			mode: PlaybackMode::Loop,
-			volume: Volume::Linear(1.0 * volume[&AudioType::Music]),
+			volume: Volume::Linear(0.9 * volume[&AudioType::Music]),
 			..default()
 		},
 	));
@@ -86,7 +86,7 @@ pub fn on_donnie_shot(
 		AudioPlayer::new(asset_server.load(random_string(&DONNIE_VOICE_LINES))),
 		PlaybackSettings {
 			mode: PlaybackMode::Despawn,
-			volume: Volume::Linear(0.7 * volume[&AudioType::DonnieVoice]),
+			volume: Volume::Linear(0.8 * volume[&AudioType::DonnieVoice]),
 			..default()
 		},
 		LimitedAudio(AudioType::DonnieVoice),
@@ -173,12 +173,6 @@ pub fn on_stonks_notification(
 	));
 }
 
-const DONNIE_VOICE_LINES: [&str; 3] = [
-	"audio/soundboard/Voicy_We have a president who doesn't have a clue.mp3",
-	"audio/soundboard/Voicy_Well i don't have to really get into specifics.mp3",
-	"audio/soundboard/Voicy_Don't know what there doing.mp3",
-];
-
 const SCREAMS: [&str; 3] = [
 	"audio/fx/9704__lithe-fider__fl_scream-2.wav",
 	"audio/fx/9705__lithe-fider__fl_scream-3.wav",
@@ -192,3 +186,32 @@ const BULLISH: [&str; 1] = ["audio/fx/331381__qubodup__public-domain-jump-sound.
 const BEARISH: [&str; 1] = ["audio/fx/423526__ccolbert70eagles23__karate-chop.m4a"];
 
 const PLOPS: [&str; 1] = ["audio/fx/245645__unfa__cartoon-pop-clean.flac"];
+
+// Should add separate volume for each
+const DONNIE_VOICE_LINES: [&str; 25] = [
+	"audio/soundboard/Voicy_We have a president who doesn't have a clue.mp3",
+	"audio/soundboard/Voicy_Well i don't have to really get into specifics.mp3",
+	"audio/soundboard/Voicy_Don't know what there doing.mp3",
+	"audio/soundboard/Voicy_Because our leaders are stupid our politicians are stup.mp3",
+	"audio/soundboard/Voicy_But Mr Trump, you're not a nice person.mp3",
+	"audio/soundboard/Voicy_But we have people who are stupid.mp3",
+	"audio/soundboard/Voicy_Don't wanna tell you everything.mp3",
+	"audio/soundboard/Voicy_Free trade can be wonderful if you have smart people.mp3",
+	"audio/soundboard/Voicy_How stupid are these politicians to allow this to happe.mp3",
+	"audio/soundboard/Voicy_I'd give myself an A+.mp3",
+	"audio/soundboard/Voicy_I don't give a damn.mp3",
+	"audio/soundboard/Voicy_I don't wanna tell you.mp3",
+	"audio/soundboard/Voicy_I have really nothing better to do.mp3",
+	"audio/soundboard/Voicy_I'm really smart.mp3",
+	"audio/soundboard/Voicy_New to this.mp3",
+	"audio/soundboard/Voicy_No I didn't say that at all, I don't think you understo.mp3",
+	"audio/soundboard/Voicy_Ofcourse i-m joking.mp3",
+	"audio/soundboard/Voicy_Small Loan of a Million Dollars.mp3",
+	"audio/soundboard/Voicy_These are corrupt people.mp3",
+	"audio/soundboard/Voicy_The system is rigged.mp3",
+	"audio/soundboard/Voicy_The systems is totally rigged.mp3",
+	"audio/soundboard/Voicy_We don't know what's happening.mp3",
+	"audio/soundboard/Voicy_Trust me, I'm like a smart person.mp3",
+	"audio/soundboard/Voicy_We have people that are morally corrupt we have people .mp3",
+	"audio/soundboard/Voicy_What I say is what I sayu.mp3",
+];
