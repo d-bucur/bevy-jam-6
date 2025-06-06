@@ -49,19 +49,20 @@ pub fn update_stonks_price(
 		stonks.price_history.pop_front();
 	}
 
+	let price_prev = *stonks.price_history.back().unwrap_or(&0);
 	stonks.price_history.push_back(price_current);
 
 	let (low, high) = notif_thresholds();
-	if price_current < low {
+	if price_current <= low && price_prev > low {
 		cmds.trigger(StonksPriceNotification::LOW);
 	}
-	if price_current > high {
+	if price_current >= high && price_prev < high {
 		cmds.trigger(StonksPriceNotification::HIGH);
 	}
 }
 
 const fn notif_thresholds() -> (u32, u32) {
-	const NOTIF_THRESHOLD: f32 = 0.8;
+	const NOTIF_THRESHOLD: f32 = 0.7;
 	const LOWEST: f32 = (STONKS_PER_BEARISH * TRADER_COUNT) as f32;
 	const HIGHEST: f32 = (STONKS_PER_BULLISH * TRADER_COUNT) as f32;
 	const DIFF: f32 = HIGHEST - LOWEST;

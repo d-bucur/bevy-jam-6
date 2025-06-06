@@ -127,7 +127,7 @@ fn main() {
 		.insert_resource(DonnieShootingLogic::default())
 		.insert_resource(GameStats::default())
 		.insert_resource(ClearColor(Color::Srgba(Srgba::hex("6b6a7b").unwrap())))
-		.insert_resource(AudioLimitCounters([1, 3, 3, 1]))
+		.insert_resource(AudioLimitCounters([1, 3, 3, 3]))
 		.add_observer(on_stonks_notification)
 		.run();
 }
@@ -409,7 +409,7 @@ fn handle_collisions(
 
 fn wobble_animation() -> Animation<Transform> {
 	Animation::<Transform> {
-		progress: 0.,
+		progress: rand::random_range(0.0..=1.0),
 		animation_speed: 10.,
 		animations: vec![
 			AnimValue::new(|t, _, n| t.scale.y = n, |p| (-p * 2.).cos() / 2. * 0.1 + 1.),

@@ -121,17 +121,21 @@ pub fn on_stonks_notification(
 	if audio_counters[AudioType::StonksNotifcation as usize] == 0 {
 		return;
 	}
-	if *trigger.event() == StonksPriceNotification::LOW {
-		cmds.spawn((
-			AudioPlayer::new(asset_server.load(random_string(&SCREAMS))),
-			PlaybackSettings {
-				mode: PlaybackMode::Despawn,
-				volume: Volume::Linear(0.5),
-				..default()
-			},
-			LimitedAudio(AudioType::StonksNotifcation),
-		));
-	}
+	cmds.spawn((
+		AudioPlayer::new(asset_server.load(random_string(match trigger.event() {
+			StonksPriceNotification::LOW => &SCREAMS,
+			StonksPriceNotification::HIGH => &RELIEF,
+		}))),
+		PlaybackSettings {
+			mode: PlaybackMode::Despawn,
+			volume: Volume::Linear(match trigger.event() {
+				StonksPriceNotification::LOW => 0.5,
+				StonksPriceNotification::HIGH => 0.9,
+			}),
+			..default()
+		},
+		LimitedAudio(AudioType::StonksNotifcation),
+	));
 }
 
 const DONNIE_VOICE_LINES: [&str; 3] = [
@@ -145,6 +149,8 @@ const SCREAMS: [&str; 3] = [
 	"audio/fx/9705__lithe-fider__fl_scream-3.wav",
 	"audio/fx/9706__lithe-fider__fl_scream-4.wav",
 ];
+
+const RELIEF: [&str; 1] = ["audio/fx/758831__universfield__comedic.mp3"];
 
 const BULLISH: [&str; 1] = ["audio/fx/331381__qubodup__public-domain-jump-sound.wav"];
 
