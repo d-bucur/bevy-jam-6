@@ -2,11 +2,13 @@ use crate::*;
 
 #[derive(Resource, Default)]
 pub struct StonksTrading {
+	// has more data than strictly needed, for prototyping different ideas
 	pub price_current: u32,
 	pub owned: u32,
 	pub spent: u32,
 	pub returns_total: i64,
 	pub price_history: VecDeque<u32>,
+	pub phase: TradePhase,
 }
 
 impl StonksTrading {
@@ -17,6 +19,13 @@ impl StonksTrading {
 			0
 		}
 	}
+}
+
+#[derive(Default)]
+pub enum TradePhase {
+	#[default]
+	Buy,
+	Dump,
 }
 
 #[derive(Component)]
@@ -73,13 +82,33 @@ const fn notif_thresholds() -> (u32, u32) {
 }
 
 pub fn player_investing(key_input: Res<ButtonInput<KeyCode>>, mut stonks: ResMut<StonksTrading>) {
-	if key_input.pressed(KeyCode::KeyB) {
-		stonks.owned += 1;
-		stonks.spent += stonks.price_current;
+	if !key_input.just_pressed(KeyCode::Space) {
+		return;
 	}
-	if key_input.just_pressed(KeyCode::KeyS) {
-		stonks.returns_total += (stonks.owned * stonks.price_current) as i64 - stonks.spent as i64;
-		stonks.owned = 0;
-		stonks.spent = 0;
+	match stonks.phase {
+		TradePhase::Buy => {
+			stonks.owned += STONKS_PER_BUY_ACTION;
+			stonks.spent += stonks.price_current * STONKS_PER_BUY_ACTION;
+		}
+		TradePhase::Dump => {
+			stonks.returns_total +=
+				(stonks.owned * stonks.price_current) as i64 - stonks.spent as i64;
+			stonks.owned = 0;
+			stonks.spent = 0;
+		}
 	}
+	stonks.phase = match stonks.phase {
+		TradePhase::Buy => TradePhase::Dump,
+		TradePhase::Dump => TradePhase::Buy,
+	};
+	// old code where you can buy multiple stonks
+	// if key_input.pressed(KeyCode::KeyB) {
+	// 	stonks.owned += 1;
+	// 	stonks.spent += stonks.price_current;
+	// }
+	// if key_input.just_pressed(KeyCode::KeyS) {
+	// 	stonks.returns_total += (stonks.owned * stonks.price_current) as i64 - stonks.spent as i64;
+	// 	stonks.owned = 0;
+	// 	stonks.spent = 0;
+	// }
 }
