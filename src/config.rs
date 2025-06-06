@@ -24,3 +24,7 @@ pub fn get_trader_random_velocity() -> Vec2 {
 	let angle = rand::random_range(0.0..PI) * 2.;
 	Vec2::new(angle.cos(), angle.sin()) * rand::random_range(0.5..1.0) * TRADER_MAX_VELOCITY
 }
+
+// computed from above
+pub const PRICE_LOWEST: f32 = (STONKS_PER_BEARISH * TRADER_COUNT) as f32;
+pub const PRICE_HIGHEST: f32 = (STONKS_PER_BULLISH * TRADER_COUNT) as f32;

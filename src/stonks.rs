@@ -12,11 +12,11 @@ pub struct StonksTrading {
 }
 
 impl StonksTrading {
-	pub fn avg_buy_price(&self) -> u32 {
+	pub fn avg_buy_price(&self) -> Option<u32> {
 		if self.owned != 0 {
-			self.spent / self.owned
+			Some(self.spent / self.owned)
 		} else {
-			0
+			None
 		}
 	}
 }
@@ -72,12 +72,10 @@ pub fn update_stonks_price(
 
 const fn notif_thresholds() -> (u32, u32) {
 	const NOTIF_THRESHOLD: f32 = 0.7;
-	const LOWEST: f32 = (STONKS_PER_BEARISH * TRADER_COUNT) as f32;
-	const HIGHEST: f32 = (STONKS_PER_BULLISH * TRADER_COUNT) as f32;
-	const DIFF: f32 = HIGHEST - LOWEST;
+	const DIFF: f32 = PRICE_HIGHEST - PRICE_LOWEST;
 	(
-		(DIFF * (1. - NOTIF_THRESHOLD) + LOWEST) as u32,
-		(DIFF * NOTIF_THRESHOLD + LOWEST) as u32,
+		(DIFF * (1. - NOTIF_THRESHOLD) + PRICE_LOWEST) as u32,
+		(DIFF * NOTIF_THRESHOLD + PRICE_LOWEST) as u32,
 	)
 }
 

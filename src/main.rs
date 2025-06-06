@@ -75,13 +75,10 @@ fn main() {
 		// })
 		// .add_plugins(WorldInspectorPlugin::new())
 		.add_plugins(MenuPlugin {})
+		.add_plugins(UIIngamePlugin {})
 		.add_systems(Startup, (window_setup, setup_entities, setup_audio).chain())
 		.add_systems(OnEnter(GameState::GameOver), ui_setup_gameover_screen)
 		.add_systems(OnEnter(GameState::PlaySetup), setup_play)
-		.add_systems(
-			OnEnter(GameState::Playing),
-			(ui_config_gizmos, setup_game_ui).chain(),
-		)
 		.add_systems(
 			FixedUpdate,
 			(
@@ -108,10 +105,10 @@ fn main() {
 					.run_if(not(in_state(GameState::Paused))),
 				(
 					update_stonks_price,
-					player_investing,
-					ui_update,
+					player_investing, // TODO bug: input should be in Update or can be missed
+					ui_update_debug,
 					ui_update_game_stats,
-					ui_fancy_update,
+					ui_update,
 				)
 					.chain()
 					.run_if(in_state(GameState::Playing)),
@@ -264,6 +261,7 @@ fn setup_entities(
 			anchor: bevy::sprite::Anchor::CenterLeft,
 			..Default::default()
 		},
+		Visibility::Hidden, // TODO temporary hidden. should remove
 		// Transform {
 		// 	scale: Vec3::new(2., 1., 1.),
 		// 	..default()
@@ -317,6 +315,10 @@ fn window_setup(
 			},
 			..OrthographicProjection::default_2d()
 		}),
+		Transform {
+			translation: Vec3::new(0., 50., 0.),
+			..default()
+		}
 	));
 	cmds.spawn((
 		Name::new("Background"),
