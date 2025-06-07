@@ -77,7 +77,7 @@ fn main() {
 		// .add_plugins(WorldInspectorPlugin::new())
 		.add_plugins(MenuPlugin {})
 		.add_plugins(UIIngamePlugin {})
-		.add_systems(Startup, (window_setup, setup_entities, setup_audio).chain())
+		.add_systems(Startup, (window_setup, preload_assets, setup_entities, setup_audio).chain())
 		.add_systems(OnEnter(GameState::GameOver), ui_setup_gameover_screen)
 		.add_systems(OnEnter(GameState::PlaySetup), setup_play)
 		.add_systems(
