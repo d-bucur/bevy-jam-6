@@ -11,6 +11,7 @@ pub enum GameState {
 	GameOver,
 	Tutorial,
 	Options,
+	Screensaver,
 }
 
 pub fn check_game_over(

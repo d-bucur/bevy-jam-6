@@ -1,8 +1,8 @@
-- tutorial
-
 # polish
 - show profit number on each sell
-- buy/sell status
+- tutorial
+- screensaver mode
+- preload all assets
 
 # optional
 - craziness/chaos level

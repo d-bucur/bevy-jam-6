@@ -15,6 +15,7 @@ impl Plugin for MenuPlugin {
 		app.add_systems(OnEnter(GameState::Menu), setup_main_menu)
 			.add_systems(OnEnter(GameState::Paused), setup_paused)
 			.add_systems(OnEnter(GameState::Options), setup_options)
+			.add_systems(OnEnter(GameState::Screensaver), setup_screensaver)
 			.add_systems(Update, apply_button_styles);
 	}
 }
@@ -45,9 +46,9 @@ fn setup_main_menu(mut commands: Commands) {
 			// parent
 			// 	.spawn(make_button("Tutorial"))
 			// 	.observe(change_state(GameState::Tutorial));
-			// parent
-			// 	.spawn(make_button("Credits"))
-			// 	.observe(change_state(GameState::Credits));
+			parent
+				.spawn(make_button("Screensaver"))
+				.observe(change_state(GameState::Screensaver));
 		});
 }
 
@@ -93,7 +94,7 @@ pub fn make_button(text: impl Into<String>) -> impl Bundle {
 		children![(
 			Button,
 			Node {
-				width: Val::Px(200.0),
+				width: Val::Px(250.0),
 				height: Val::Px(65.0),
 				border: UiRect::all(Val::Px(3.0)),
 				// horizontally center child text
@@ -281,4 +282,31 @@ pub fn make_small_button(text: impl Into<String>) -> impl Bundle {
 			)]
 		)],
 	)
+}
+
+fn setup_screensaver(mut commands: Commands) {
+	commands
+		.spawn((
+			Node {
+				position_type: PositionType::Absolute,
+				width: Val::Percent(100.0),
+				// height: Val::Percent(100.0),
+				align_items: AlignItems::Start,
+				justify_content: JustifyContent::Start,
+				flex_direction: FlexDirection::Row,
+				padding: UiRect::vertical(Val::Px(50.)),
+				row_gap: Val::Px(20.0),
+				..default()
+			},
+			// Don't block picking events for other UI roots.
+			Pickable::IGNORE,
+			GlobalZIndex(2),
+			// BackgroundColor(bevy::color::palettes::css::BLUE.with_alpha(0.3).into()),
+			StateScoped(GameState::Screensaver),
+		))
+		.with_children(|parent| {
+			parent
+				.spawn(make_small_button("Back"))
+				.observe(change_state(GameState::Menu));
+		});
 }

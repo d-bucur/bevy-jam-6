@@ -55,18 +55,19 @@ pub fn setup_game_ui(mut commands: Commands, window: Single<&Window>) {
 				padding: UiRect::right(Val::Px(50.)),
 				..default()
 			},
-			BackgroundColor(bevy::color::palettes::css::BLUE.with_alpha(0.3).into()),
+			// BackgroundColor(bevy::color::palettes::css::BLUE.with_alpha(0.3).into()),
 			// Don't block picking events for other UI roots.
 			Pickable::IGNORE,
 			GlobalZIndex(2),
 			StateScoped(GameState::Playing),
 		))
 		.with_children(|parent| {
+			const TEXT_SIZE: f32 = 60.;
 			parent.spawn((
 				Text::new("Money"),
 				ProfitText,
 				TextFont {
-					font_size: 75.,
+					font_size: TEXT_SIZE,
 					..default()
 				},
 				TextShadow::default(),
@@ -75,7 +76,7 @@ pub fn setup_game_ui(mut commands: Commands, window: Single<&Window>) {
 				Text::new("Time"),
 				TimeText,
 				TextFont {
-					font_size: 75.,
+					font_size: TEXT_SIZE,
 					..default()
 				},
 				TextShadow::default(),
