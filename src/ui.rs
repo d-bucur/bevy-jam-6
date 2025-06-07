@@ -63,6 +63,16 @@ pub fn setup_game_ui(mut commands: Commands, window: Single<&Window>) {
 		))
 		.with_children(|parent| {
 			const TEXT_SIZE: f32 = 60.;
+			// Indicator displaying profit when selling
+			// parent.spawn((
+			// 	Text::new("Added"),
+			// 	TextFont {
+			// 		font_size: TEXT_SIZE,
+			// 		..default()
+			// 	},
+			// 	TextShadow::default(),
+			// 	Visibility::Hidden,
+			// ));
 			parent.spawn((
 				Text::new("Money"),
 				ProfitText,

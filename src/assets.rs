@@ -16,6 +16,9 @@ pub fn bearish_texture_path() -> String {
 	format!("taco_man3/bearish{}.PNG", rand::random_range(1..=2))
 }
 
+pub const FONT_MAIN: &str = "fonts/Funicorn.ttf";
+// pub const FONT_SECONDARY: &str = "fonts/RelayfunDEMO.ttf";
+
 /// Holds a handle to all resources in the assets folder so they don't have to load each time again
 /// Also avoids tons of ajax requests in web build
 #[derive(Resource, Default)]

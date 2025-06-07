@@ -8,5 +8,8 @@ Music
 Sounds
 - https://freesound.org/people/Universfield/sounds/758831/
 
+Font
+- https://www.dafont.com/it/funicorn.font
+
 Sprites
 - TODO

@@ -250,7 +250,6 @@ fn setup_entities(
 			// Shadow
 			children![
 				shadow(mesh_handle.clone(), material_handle.clone()),
-				// (Text2d::new("TARIFFS!"), OverheadText::default())
 			],
 		))
 		.observe(audio::on_projectile_shot);

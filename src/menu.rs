@@ -21,7 +21,7 @@ impl Plugin for MenuPlugin {
 }
 
 // better version here: https://github.com/TheBevyFlock/bevy_new_2d/blob/main/src/menus/main.rs
-fn setup_main_menu(mut commands: Commands) {
+fn setup_main_menu(mut commands: Commands, assets: Res<AssetServer>) {
 	commands
 		.spawn((
 			make_ui_root("Main Menu"),
@@ -33,6 +33,7 @@ fn setup_main_menu(mut commands: Commands) {
 				Text::new(GAME_NAME),
 				TextFont {
 					font_size: 100.,
+					font: assets.load(FONT_MAIN),
 					..default()
 				},
 				TextShadow::default(),
