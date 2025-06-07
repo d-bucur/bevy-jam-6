@@ -78,7 +78,10 @@ fn main() {
 		// .add_plugins(WorldInspectorPlugin::new())
 		.add_plugins(MenuPlugin {})
 		.add_plugins(UIIngamePlugin {})
-		.add_systems(Startup, (window_setup, preload_assets, setup_entities, setup_audio).chain())
+		.add_systems(
+			Startup,
+			(window_setup, preload_assets, setup_entities, setup_audio).chain(),
+		)
 		.add_systems(OnEnter(GameState::GameOver), ui_setup_gameover_screen)
 		.add_systems(OnEnter(GameState::PlaySetup), setup_play)
 		.add_systems(
@@ -108,13 +111,16 @@ fn main() {
 				(
 					update_stonks_price,
 					player_investing, // TODO bug: input should be in Update or can be missed
-					handle_effect_requests,
+					tick_text_effects,
 					ui_update_debug,
 					ui_update_game_stats,
 					ui_update,
 				)
 					.chain()
 					.run_if(in_state(GameState::Playing)),
+				(handle_effect_requests,)
+					.chain()
+					.run_if(not(in_state(GameState::Paused))),
 			)
 				.chain(),
 		)
@@ -248,9 +254,7 @@ fn setup_entities(
 			PlayerShootingLogic::default(),
 			wobble_animation(),
 			// Shadow
-			children![
-				shadow(mesh_handle.clone(), material_handle.clone()),
-			],
+			children![shadow(mesh_handle.clone(), material_handle.clone()),],
 		))
 		.observe(audio::on_projectile_shot);
 

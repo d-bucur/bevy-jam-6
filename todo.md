@@ -1,12 +1,12 @@
 # polish
-- show profit number on each sell
 - tutorial
-- check input in update
 - font and promo image
+- check input in update
 
 # optional
 - craziness/chaos level
-- roguelike progression?
+- mobile controls
+- dialogue frequency in options
 
-# options
-- dialogue frequency
+# cut
+- roguelike progression?

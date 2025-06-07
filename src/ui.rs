@@ -32,6 +32,19 @@ const CHART_OFFSET: Vec2 = Vec2::new(-WIDTH, HEIGHT);
 #[derive(GizmoConfigGroup, Default, Reflect)]
 pub struct DottedGizmoConfig;
 
+#[derive(Component)]
+pub struct TextEffect {
+	timer: Timer,
+}
+
+impl Default for TextEffect {
+	fn default() -> Self {
+		Self {
+			timer: Timer::from_seconds(0.5, TimerMode::Once),
+		}
+	}
+}
+
 #[derive(Event)]
 pub struct TextEffectRequest {
 	pub text: String,
@@ -213,9 +226,37 @@ pub fn ui_update(
 	}));
 }
 
-pub fn handle_effect_requests(mut effects: EventReader<TextEffectRequest>) {
+pub fn handle_effect_requests(mut effects: EventReader<TextEffectRequest>, mut cmd: Commands) {
 	for e in effects.read() {
-		// todo!();
+		const ROTATION: f32 = 0.2;
+		cmd.spawn((
+			Text2d::new(e.text.clone()),
+			TextColor(Color::Srgba(Srgba::hex("ffffff").unwrap())),
+			TextEffect {
+				timer: Timer::from_seconds(e.duration_sec, TimerMode::Once),
+			},
+			Transform::from_xyz(-WIDTH / 2. + 100., HEIGHT + (CHART_SIZE.y / 2.), 10.)
+				.with_rotation(Quat::from_rotation_z(rand::random_range(
+					-ROTATION..ROTATION,
+				))),
+			TextLayout::new_with_justify(JustifyText::Center),
+			TextFont {
+				font_size: 35.,
+				..default()
+			},
+		));
+	}
+}
+
+pub fn tick_text_effects(
+	effects: Query<(&mut TextEffect, Entity)>,
+	time: Res<Time>,
+	mut cmds: Commands,
+) {
+	for (mut effect, entity) in effects {
+		if effect.timer.tick(time.delta()).just_finished() {
+			cmds.entity(entity).despawn();
+		}
 	}
 }
 
@@ -237,7 +278,8 @@ pub fn ui_update_game_stats(
 	stats: Res<GameStats>,
 ) {
 	time_q.0 = format!("{}", stats.time_remaining.remaining_secs() as u32);
-	profit_q.0 = format!("${}", separated_number(stonks.returns_total));
+	// profit_q.0 = format!("${}", separated_number(stonks.returns_total));
+	profit_q.0 = format_money(stonks.returns_total);
 	// let mut text = text_q.single_mut().unwrap();
 	// **text = format!(
 	// 	"Time: {}\nProfit: {}",
@@ -308,4 +350,13 @@ fn separated_number(n: i64) -> String {
 		num = format!("-{num}")
 	}
 	num
+}
+
+// TODO combine with separator
+pub fn format_money(money: i64) -> String {
+	if money < 0 {
+		format!("-${}", -money)
+	} else {
+		format!("+${}", money)
+	}
 }

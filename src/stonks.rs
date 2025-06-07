@@ -91,22 +91,26 @@ pub fn player_investing(
 		TradePhase::Buy => {
 			stonks.owned += STONKS_PER_BUY_ACTION;
 			stonks.spent += stonks.price_current * STONKS_PER_BUY_ACTION;
+			stonks.phase = TradePhase::Dump;
+
+			effects.write(TextEffectRequest {
+				text: "BOUGHT".into(),
+				duration_sec: 1.,
+			});
 		}
 		TradePhase::Dump => {
-			stonks.returns_total +=
-				(stonks.owned * stonks.price_current) as i64 - stonks.spent as i64;
+			let profit = (stonks.owned * stonks.price_current) as i64 - stonks.spent as i64;
+			stonks.returns_total += profit;
 			stonks.owned = 0;
 			stonks.spent = 0;
+			stonks.phase = TradePhase::Buy;
+
+			effects.write(TextEffectRequest {
+				text: format_money(profit),
+				duration_sec: 1.,
+			});
 		}
 	}
-	stonks.phase = match stonks.phase {
-		TradePhase::Buy => TradePhase::Dump,
-		TradePhase::Dump => TradePhase::Buy,
-	};
-	effects.write(TextEffectRequest {
-		text: "BOUGHT".into(),
-		duration_sec: 1.,
-	});
 	// old code where you can buy multiple stonks
 	// if key_input.pressed(KeyCode::KeyB) {
 	// 	stonks.owned += 1;
