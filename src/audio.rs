@@ -213,12 +213,12 @@ const BEARISH: [&str; 1] = ["audio/fx/423526__ccolbert70eagles23__karate-chop.m4
 const PLOPS: [&str; 1] = ["audio/fx/245645__unfa__cartoon-pop-clean.flac"];
 
 // Should add separate volume for each
-const DONNIE_VOICE_LINES: [&str; 25] = [
+const DONNIE_VOICE_LINES: [&str; 24] = [
 	"audio/soundboard/Voicy_We have a president who doesn't have a clue.mp3",
 	"audio/soundboard/Voicy_Well i don't have to really get into specifics.mp3",
 	"audio/soundboard/Voicy_Don't know what there doing.mp3",
 	"audio/soundboard/Voicy_Because our leaders are stupid our politicians are stup.mp3",
-	"audio/soundboard/Voicy_But Mr Trump, you're not a nice person.mp3",
+	// "audio/soundboard/Voicy_But Mr Trump, you're not a nice person.mp3",
 	"audio/soundboard/Voicy_But we have people who are stupid.mp3",
 	"audio/soundboard/Voicy_Don't wanna tell you everything.mp3",
 	"audio/soundboard/Voicy_Free trade can be wonderful if you have smart people.mp3",

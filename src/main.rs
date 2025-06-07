@@ -70,6 +70,7 @@ fn main() {
 		}))
 		.init_state::<GameState>()
 		.insert_resource(StonksTrading::default())
+		.insert_resource(AssetsBuffer::default())
 		// Enable this part to use inspector
 		// .add_plugins(EguiPlugin {
 		// 	enable_multipass_for_primary_context: true,

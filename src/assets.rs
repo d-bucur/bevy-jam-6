@@ -16,6 +16,11 @@ pub fn bearish_texture_path() -> String {
 	format!("taco_man3/bearish{}.PNG", rand::random_range(1..=2))
 }
 
-pub fn preload_assets(asset_server: Res<AssetServer>,) {
-	asset_server.load_folder("/");
+/// Holds a handle to all resources in the assets folder so they don't have to load each time again
+/// Also avoids tons of ajax requests in web build
+#[derive(Resource, Default)]
+pub struct AssetsBuffer(Handle<bevy::asset::LoadedFolder>);
+
+pub fn preload_assets(asset_server: Res<AssetServer>, mut buffer: ResMut<AssetsBuffer>) {
+	buffer.0 = asset_server.load_folder("/");
 }
