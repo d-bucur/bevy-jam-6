@@ -69,6 +69,7 @@ fn main() {
 			..default()
 		}))
 		.init_state::<GameState>()
+		.insert_resource(StonksTrading::default())
 		// Enable this part to use inspector
 		// .add_plugins(EguiPlugin {
 		// 	enable_multipass_for_primary_context: true,
@@ -106,6 +107,7 @@ fn main() {
 				(
 					update_stonks_price,
 					player_investing, // TODO bug: input should be in Update or can be missed
+					handle_effect_requests,
 					ui_update_debug,
 					ui_update_game_stats,
 					ui_update,
@@ -318,7 +320,7 @@ fn window_setup(
 		Transform {
 			translation: Vec3::new(0., 50., 0.),
 			..default()
-		}
+		},
 	));
 	cmds.spawn((
 		Name::new("Background"),

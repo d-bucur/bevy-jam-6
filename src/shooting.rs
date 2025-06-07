@@ -94,7 +94,11 @@ pub fn player_shooting(
 
 	// not sure if should use arrow or gizmo line. keeping both for now
 	let start_pos: Vec2 = player.0.translation.xy();
-	gizmos.line_2d(start_pos, cursor_pos, bevy::color::palettes::css::YELLOW.with_alpha(0.5));
+	gizmos.line_2d(
+		start_pos,
+		cursor_pos,
+		bevy::color::palettes::css::YELLOW.with_alpha(0.5),
+	);
 	const ARROW_DISTANCE: f32 = 100.;
 	let dir = (cursor_pos - start_pos).normalize();
 	arrow.translation = (start_pos + dir * ARROW_DISTANCE).extend(900.);
@@ -116,10 +120,7 @@ pub fn player_shooting(
 	}
 }
 
-pub fn charge_player_tacos(
-	mut q: Single<&mut PlayerShootingLogic>,
-	time: Res<Time>,
-) {
+pub fn charge_player_tacos(mut q: Single<&mut PlayerShootingLogic>, time: Res<Time>) {
 	if q.tacos_left >= q.max_tacos {
 		return;
 	}

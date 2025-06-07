@@ -6,6 +6,9 @@ pub struct ProfitText;
 #[derive(Component)]
 pub struct TimeText;
 
+#[derive(Component)]
+pub struct StonkPhaseText;
+
 pub struct UIIngamePlugin {}
 
 impl Plugin for UIIngamePlugin {
@@ -14,35 +17,51 @@ impl Plugin for UIIngamePlugin {
 			OnEnter(GameState::Playing),
 			(setup_gizmos, setup_game_ui).chain(),
 		)
-		.init_gizmo_group::<DottedGizmoConfig>();
+		.add_systems(
+			Update,
+			ui_update_stonks_phase.run_if(resource_changed::<StonksTrading>),
+		)
+		.init_gizmo_group::<DottedGizmoConfig>()
+		.add_event::<TextEffectRequest>();
 	}
 }
+
+const CHART_SIZE: Vec2 = Vec2::new(WIDTH / 2., 100.);
+const CHART_OFFSET: Vec2 = Vec2::new(-WIDTH, HEIGHT);
 
 #[derive(GizmoConfigGroup, Default, Reflect)]
 pub struct DottedGizmoConfig;
 
-pub fn setup_game_ui(mut commands: Commands) {
+#[derive(Event)]
+pub struct TextEffectRequest {
+	pub text: String,
+	pub duration_sec: f32,
+}
+
+pub fn setup_game_ui(mut commands: Commands, window: Single<&Window>) {
+	// Bevy UI is PAIN mode
 	commands
 		.spawn((
-			Name::new("In game UI"),
+			Name::new("In game UI - stats"),
 			Node {
 				position_type: PositionType::Absolute,
-				width: Val::Percent(100.0),
-				height: Val::Percent(100.0),
-				align_items: AlignItems::Start,
-				justify_content: JustifyContent::End,
-				flex_direction: FlexDirection::Row,
+				width: Val::VMin(70.),
+				height: Val::Percent(15.),
+				top: Val::Px(0.),
+				left: Val::Percent(50.),
 				column_gap: Val::Px(100.0),
-				padding: UiRect::vertical(Val::Px(25.)).with_right(Val::Px(200.)),
+				align_items: AlignItems::Center,
+				justify_content: JustifyContent::End,
+				padding: UiRect::right(Val::Px(50.)),
 				..default()
 			},
+			BackgroundColor(bevy::color::palettes::css::BLUE.with_alpha(0.3).into()),
 			// Don't block picking events for other UI roots.
 			Pickable::IGNORE,
 			GlobalZIndex(2),
 			StateScoped(GameState::Playing),
 		))
 		.with_children(|parent| {
-			// parent.spawn((Text::new("Stonks go here"), StonksUiText));
 			parent.spawn((
 				Text::new("Money"),
 				ProfitText,
@@ -61,6 +80,53 @@ pub fn setup_game_ui(mut commands: Commands) {
 				},
 				TextShadow::default(),
 			));
+		});
+
+	// Text indicator on stonks
+	commands
+		.spawn((
+			Name::new("In game UI - stonks"),
+			Node {
+				position_type: PositionType::Absolute,
+				width: Val::VMin(70.),
+				height: Val::Percent(15.),
+				top: Val::Px(0.),
+				right: Val::Percent(50.),
+				align_items: AlignItems::Center,
+				justify_content: JustifyContent::Center,
+				..default()
+			},
+			// BackgroundColor(bevy::color::palettes::css::RED.with_alpha(0.3).into()),
+			// Don't block picking events for other UI roots.
+			Pickable::IGNORE,
+			GlobalZIndex(2),
+			StateScoped(GameState::Playing),
+		))
+		.with_children(|parent| {
+			parent
+				.spawn((
+					Node {
+						position_type: PositionType::Relative,
+						width: Val::VMin(30.),
+						height: Val::Percent(100.),
+						top: Val::VMin(5.),
+						right: Val::VMin(15.),
+						align_items: AlignItems::Center,
+						justify_content: JustifyContent::Center,
+						..default()
+					},
+					// BackgroundColor(bevy::color::palettes::css::GREEN.with_alpha(0.5).into()),
+				))
+				.with_children(|parent| {
+					parent.spawn((
+						Text::new("Sell"),
+						TextFont {
+							font_size: 15.,
+							..default()
+						},
+						StonkPhaseText,
+					));
+				});
 		});
 }
 
@@ -109,33 +175,48 @@ pub fn ui_update(
 	);
 
 	// new chart
-	let chart_size = Vec2::new(WIDTH / 2., 100.);
-	let chart_offset = Vec2::new(-WIDTH, HEIGHT);
 	// buy value indicator
 	if let Some(buy_price) = stonks.avg_buy_price() {
-		let buy_value = chart_offset + Vec2::new(0., buy_price as f32);
+		let buy_value = CHART_OFFSET + Vec2::new(0., buy_price as f32);
 		gizmos_dotted.line_2d(
 			buy_value,
-			buy_value + Vec2::new(chart_size.x, 0.),
+			buy_value + Vec2::new(CHART_SIZE.x, 0.),
 			WHITE.with_alpha(0.5),
 		);
 	}
 
 	// border
 	gizmos.rect_2d(
-		Isometry2d::from_xy(-WIDTH + chart_size.x / 2., HEIGHT + 70.),
-		chart_size,
+		Isometry2d::from_xy(-WIDTH + CHART_SIZE.x / 2., HEIGHT + 70.),
+		CHART_SIZE,
 		Color::Srgba(Srgba::hex("849b85").unwrap()),
 	);
 	// chart
-	let x_step = chart_size.x / STONKS_DATA_POINTS as f32;
+	let x_step = CHART_SIZE.x / STONKS_DATA_POINTS as f32;
 	let y_fact = 1.; // should calc properly
 	gizmos.linestrip_gradient_2d(stonks.price_history.iter().enumerate().map(|(i, &v)| {
 		(
-			chart_offset + Vec2::new(i as f32 * x_step, v as f32 * y_fact),
+			CHART_OFFSET + Vec2::new(i as f32 * x_step, v as f32 * y_fact),
 			Hsla::new(price_ratio(v) * HUE_MAX, 0.7, 0.5, 1.),
 		)
 	}));
+}
+
+pub fn handle_effect_requests(mut effects: EventReader<TextEffectRequest>) {
+	for e in effects.read() {
+		// todo!();
+	}
+}
+
+pub fn ui_update_stonks_phase(
+	stonks: Res<StonksTrading>,
+	mut text: Single<&mut Text, With<StonkPhaseText>>,
+) {
+	text.0 = (match stonks.phase {
+		TradePhase::Buy => "Buy",
+		TradePhase::Dump => "Sell",
+	})
+	.to_string()
 }
 
 pub fn ui_update_game_stats(

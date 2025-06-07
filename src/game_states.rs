@@ -34,8 +34,7 @@ pub fn check_game_pause(
 	let current_state = *current_state_res.get();
 	if current_state == GameState::Paused {
 		next_state.set(GameState::Playing);
-	}
-	else if current_state == GameState::Playing {
+	} else if current_state == GameState::Playing {
 		next_state.set(GameState::Paused);
 	}
 }

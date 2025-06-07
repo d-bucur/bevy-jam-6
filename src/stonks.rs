@@ -79,7 +79,11 @@ const fn notif_thresholds() -> (u32, u32) {
 	)
 }
 
-pub fn player_investing(key_input: Res<ButtonInput<KeyCode>>, mut stonks: ResMut<StonksTrading>) {
+pub fn player_investing(
+	key_input: Res<ButtonInput<KeyCode>>,
+	mut stonks: ResMut<StonksTrading>,
+	mut effects: EventWriter<TextEffectRequest>,
+) {
 	if !key_input.just_pressed(KeyCode::Space) {
 		return;
 	}
@@ -99,6 +103,10 @@ pub fn player_investing(key_input: Res<ButtonInput<KeyCode>>, mut stonks: ResMut
 		TradePhase::Buy => TradePhase::Dump,
 		TradePhase::Dump => TradePhase::Buy,
 	};
+	effects.write(TextEffectRequest {
+		text: "BOUGHT".into(),
+		duration_sec: 1.,
+	});
 	// old code where you can buy multiple stonks
 	// if key_input.pressed(KeyCode::KeyB) {
 	// 	stonks.owned += 1;

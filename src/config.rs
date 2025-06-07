@@ -2,6 +2,7 @@ use std::f32::consts::PI;
 
 use bevy::math::Vec2;
 
+pub const GAME_NAME: &str = "Donnie's Tacos";
 pub const WIDTH: f32 = 600.;
 pub const HEIGHT: f32 = 350.;
 
