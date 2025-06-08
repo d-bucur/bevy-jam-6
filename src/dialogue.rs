@@ -69,6 +69,15 @@ pub const ENDING_SARCASM: [&str; 10] = [
 	"You can now afford a carton of eggs.",
 ];
 
+pub const ENDING_NEGATIVE_SARCASM: [&str; 6] = [
+	"To become a millionaire as a nepo baby, start as a billionnaire.",
+	"Win some, lose some more.",
+	"Just take a loan from the Bank of Daddy.",
+	"We can probably socialize this loss somehow.",
+	"All part of a 5D chess plan.",
+	"What do you mean red is bad??",
+];
+
 pub fn random_string<T: Copy>(a: &[T]) -> T {
 	let mut rng = rand::rng();
 	let idx = rng.random_range(..a.len());

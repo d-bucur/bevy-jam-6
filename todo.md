@@ -1,4 +1,5 @@
 # polish
+- ui text not visible enough
 - font and promo image
 - bug with some audio file: `Result::unwrap()` on an `Err` value: UnrecognizedFormat
 

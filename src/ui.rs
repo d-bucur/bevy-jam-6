@@ -330,7 +330,11 @@ pub fn ui_setup_gameover_screen(mut commands: Commands, stonks: Res<StonksTradin
 				BackgroundColor(bevy::color::palettes::css::BLACK.with_alpha(0.8).into()),
 				children![
 					(
-						Text::new("Congratulations! You are now richer by"),
+						Text::new(if stonks.returns_total >= 0 {
+							"Congratulations! You are now richer by"
+						} else {
+							"Damn woke economy! You are now poorer by"
+						}),
 						TextLayout {
 							justify: JustifyText::Center,
 							..default()
@@ -345,7 +349,11 @@ pub fn ui_setup_gameover_screen(mut commands: Commands, stonks: Res<StonksTradin
 						TextShadow::default(),
 					),
 					(
-						Text::new(random_string(&ENDING_SARCASM)),
+						Text::new(random_string(if stonks.returns_total >= 0 {
+							&ENDING_SARCASM
+						} else {
+							&ENDING_NEGATIVE_SARCASM
+						})),
 						TextLayout {
 							justify: JustifyText::Center,
 							..default()
