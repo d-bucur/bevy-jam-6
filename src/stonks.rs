@@ -81,10 +81,13 @@ const fn notif_thresholds() -> (u32, u32) {
 
 pub fn player_investing(
 	key_input: Res<ButtonInput<KeyCode>>,
+	touch_res: Res<Touches>,
 	mut stonks: ResMut<StonksTrading>,
 	mut effects: EventWriter<TextEffectRequest>,
 ) {
-	if !key_input.just_pressed(KeyCode::Space) {
+	let touch_buy = (touch_res.any_just_released() && touch_res.iter().count() == 1) // one released in this frame, one remaining
+		|| touch_res.iter_just_released().count() == 2; // both release in the same frame
+	if !key_input.just_pressed(KeyCode::Space) && !touch_buy {
 		return;
 	}
 	match stonks.phase {

@@ -73,6 +73,7 @@ impl BulletPattern for UniformPattern {
 // Too big. Should break up
 pub fn player_shooting(
 	mouse_button: Res<ButtonInput<MouseButton>>,
+	touch_res: Res<Touches>,
 	mut spawn_events: EventWriter<SpawnProjectile>,
 	mut gizmos: Gizmos<DottedGizmoConfig>,
 	window: Single<&Window>,
@@ -83,12 +84,21 @@ pub fn player_shooting(
 	mut cmds: Commands,
 ) {
 	// draw shooting line
-	let Some(cursor_pos) = window
-		.cursor_position()
-		.and_then(|p| camera.0.viewport_to_world_2d(camera.1, p).ok())
-	else {
+	let touches = touch_res.iter().collect::<Vec<_>>();
+	let target_pos_viewport = if !touches.is_empty() {
+		// touch
+		touches[0].position()
+	} else if let Some(cursor) = window.cursor_position() {
+		// mouse
+		cursor
+	} else {
 		return;
 	};
+
+	let cursor_pos = camera
+		.0
+		.viewport_to_world_2d(camera.1, target_pos_viewport)
+		.unwrap();
 
 	// not sure if should use arrow or gizmo line. keeping both for now
 	let start_pos: Vec2 = player.0.translation.xy();
@@ -106,7 +116,7 @@ pub fn player_shooting(
 	if shoot_logic.tacos_left == 0 {
 		return;
 	}
-	if mouse_button.just_pressed(MouseButton::Left) {
+	if mouse_button.just_pressed(MouseButton::Left) || touch_res.any_just_released() {
 		spawn_events.write(SpawnProjectile {
 			projectile_type: Rumor::Taco,
 			position: start_pos,

@@ -77,16 +77,6 @@ pub fn setup_game_ui(mut commands: Commands, window: Single<&Window>) {
 		))
 		.with_children(|parent| {
 			const TEXT_SIZE: f32 = 60.;
-			// Indicator displaying profit when selling
-			// parent.spawn((
-			// 	Text::new("Added"),
-			// 	TextFont {
-			// 		font_size: TEXT_SIZE,
-			// 		..default()
-			// 	},
-			// 	TextShadow::default(),
-			// 	Visibility::Hidden,
-			// ));
 			parent.spawn((
 				Text::new("Money"),
 				ProfitText,
@@ -95,6 +85,7 @@ pub fn setup_game_ui(mut commands: Commands, window: Single<&Window>) {
 					..default()
 				},
 				TextShadow::default(),
+				TextLayout::new_with_linebreak(LineBreak::NoWrap),
 			));
 			parent.spawn((
 				Text::new("Time"),
@@ -108,6 +99,7 @@ pub fn setup_game_ui(mut commands: Commands, window: Single<&Window>) {
 		});
 
 	// Text indicator on stonks
+	// complicated way to position relative to center of screen
 	commands
 		.spawn((
 			Name::new("In game UI - stonks"),
@@ -153,6 +145,30 @@ pub fn setup_game_ui(mut commands: Commands, window: Single<&Window>) {
 					));
 				});
 		});
+	// Testing buy button on top of stonks chart. Not working.
+	// commands
+	// 	.spawn((
+	// 		Name::new("In game UI - BUY stonks button"),
+	// 		Node {
+	// 			position_type: PositionType::Absolute,
+	// 			width: Val::VMin(70.),
+	// 			height: Val::Percent(15.),
+	// 			top: Val::Px(0.),
+	// 			right: Val::Percent(50.),
+	// 			justify_content: JustifyContent::Start,
+	// 			align_items: AlignItems::Start,
+	// 			flex_direction: FlexDirection::Row,
+	// 			..default()
+	// 		},
+	// 		BackgroundColor(bevy::color::palettes::css::RED.with_alpha(0.3).into()),
+	// 		// Don't block picking events for other UI roots.
+	// 		Pickable::IGNORE,
+	// 		GlobalZIndex(2),
+	// 		StateScoped(GameState::Playing),
+	// 	))
+	// 	.with_children(|parent| {
+	// 		parent.spawn(make_small_button("BUYSELL"));
+	// 	});
 }
 
 pub fn ui_update_debug(
