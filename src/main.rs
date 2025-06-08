@@ -300,13 +300,18 @@ fn window_setup(
 	mut cmds: Commands,
 	asset_server: Res<AssetServer>,
 ) {
-	let scale_factor = window.resolution.scale_factor();
+	// Not really sure why this works, but it's a late fix
+	let scale_factor = 2.5;
 	window
 		.resolution
 		.set(WIDTH * scale_factor, HEIGHT * scale_factor);
 	cmds.spawn((
 		Camera2d,
 		Projection::Orthographic(OrthographicProjection {
+			// This seems to be the best one?
+			scaling_mode: bevy::render::camera::ScalingMode::FixedVertical {
+				viewport_height: HEIGHT * scale_factor,
+			},
 			// scaling_mode: bevy::render::camera::ScalingMode::Fixed {
 			// 	width: WIDTH * scale_factor,
 			// 	height: HEIGHT * scale_factor,
@@ -315,10 +320,6 @@ fn window_setup(
 			// 	max_width: WIDTH * scale_factor,
 			// 	max_height: HEIGHT * scale_factor,
 			// },
-			// This seems to be the best one?
-			scaling_mode: bevy::render::camera::ScalingMode::FixedVertical {
-				viewport_height: HEIGHT * scale_factor,
-			},
 			..OrthographicProjection::default_2d()
 		}),
 		Transform {
