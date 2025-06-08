@@ -113,13 +113,10 @@ fn main() {
 				)
 					.chain()
 					.run_if(not(in_state(GameState::Paused))),
-				(
-					update_stonks_price,
-					tick_text_effects,
-					ui_update_debug,
-					ui_update_game_stats,
-					ui_update,
-				)
+				(update_stonks_price, ui_update)
+					.chain()
+					.run_if(in_state(GameState::Playing)),
+				(tick_text_effects, ui_update_debug, ui_update_game_stats)
 					.chain()
 					.run_if(in_state(GameState::Playing)),
 				(handle_effect_requests,)

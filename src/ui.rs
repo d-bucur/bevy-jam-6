@@ -171,7 +171,7 @@ pub fn ui_update_debug(
 
 pub fn setup_gizmos(mut config_store: ResMut<GizmoConfigStore>) {
 	let (default, _) = config_store.config_mut::<DefaultGizmoConfigGroup>();
-	default.line.width = 5.;
+	default.line.width = 8.;
 
 	let (dotted, _) = config_store.config_mut::<DottedGizmoConfig>();
 	dotted.line.style = GizmoLineStyle::Dashed {
@@ -210,13 +210,13 @@ pub fn ui_update(
 		);
 	}
 
-	// border
-	gizmos.rect_2d(
+	// chart border
+	gizmos_dotted.rect_2d(
 		Isometry2d::from_xy(-WIDTH + CHART_SIZE.x / 2., HEIGHT + 70.),
 		CHART_SIZE,
 		Color::Srgba(Srgba::hex("849b85").unwrap()),
 	);
-	// chart
+	// chart history
 	let x_step = CHART_SIZE.x / STONKS_DATA_POINTS as f32;
 	let y_fact = 1.; // should calc properly
 	gizmos.linestrip_gradient_2d(stonks.price_history.iter().enumerate().map(|(i, &v)| {
