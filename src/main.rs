@@ -82,13 +82,18 @@ fn main() {
 			Startup,
 			(window_setup, preload_assets, setup_entities, setup_audio).chain(),
 		)
-		.add_systems(OnEnter(GameState::GameOver), ui_setup_gameover_screen)
 		.add_systems(OnEnter(GameState::PlaySetup), setup_play)
 		.add_systems(
+			// systems that rely on input should be in Update to avoid missing any
+			Update,
+			(player_shooting, player_investing).run_if(in_state(GameState::Playing)),
+		)
+		.add_systems(
+			// I prefer having most systems in one place to better understand the flow of the game
 			FixedUpdate,
 			(
 				check_game_pause,
-				(check_game_over, charge_player_tacos, player_shooting)
+				(check_game_over, charge_player_tacos)
 					.chain()
 					.run_if(in_state(GameState::Playing)),
 				(
@@ -110,7 +115,6 @@ fn main() {
 					.run_if(not(in_state(GameState::Paused))),
 				(
 					update_stonks_price,
-					player_investing, // TODO bug: input should be in Update or can be missed
 					tick_text_effects,
 					ui_update_debug,
 					ui_update_game_stats,

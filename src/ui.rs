@@ -17,6 +17,7 @@ impl Plugin for UIIngamePlugin {
 			OnEnter(GameState::Playing),
 			(setup_gizmos, setup_game_ui).chain(),
 		)
+		.add_systems(OnEnter(GameState::GameOver), ui_setup_gameover_screen)
 		.add_systems(
 			Update,
 			ui_update_stonks_phase.run_if(resource_changed::<StonksTrading>),
@@ -244,6 +245,7 @@ pub fn handle_effect_requests(mut effects: EventReader<TextEffectRequest>, mut c
 				font_size: 35.,
 				..default()
 			},
+			StateScoped(GameState::Playing),
 		));
 	}
 }

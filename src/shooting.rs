@@ -72,7 +72,6 @@ impl BulletPattern for UniformPattern {
 
 // Too big. Should break up
 pub fn player_shooting(
-	key_button: Res<ButtonInput<KeyCode>>,
 	mouse_button: Res<ButtonInput<MouseButton>>,
 	mut spawn_events: EventWriter<SpawnProjectile>,
 	mut gizmos: Gizmos<DottedGizmoConfig>,
@@ -80,8 +79,7 @@ pub fn player_shooting(
 	camera: Single<(&Camera, &GlobalTransform)>,
 	player: Single<(&Transform, Entity), With<Player>>,
 	mut shoot_logic: Single<&mut PlayerShootingLogic>,
-	mut arrow: Single<&mut Transform, (With<PlayerArrowIndicator>, Without<Player>)>,
-	mut stats: ResMut<GameStats>,
+	mut arrow: Single<&mut Transform, (With<PlayerArrowIndicator>, Without<Player>)>, // should move to input or remove
 	mut cmds: Commands,
 ) {
 	// draw shooting line
