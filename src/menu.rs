@@ -227,6 +227,21 @@ fn setup_options(mut commands: Commands) {
 					p.spawn(Text::new("Effects"));
 					poor_mans_radio_select(p, AudioType::TraderStatusChange);
 				});
+			parent.spawn(Node {
+				flex_direction: FlexDirection::Row,
+				..default()
+			}).with_children(|parent| {	
+				// TODO config reasonable values		
+				parent.spawn(Text::new("Chaos level"));
+				parent.spawn(make_small_button("Low"))
+					.observe(change_config_value(10, 2));
+				parent.spawn(make_small_button("Normal"))
+					.observe(change_config_value(15, 3));
+				parent.spawn(make_small_button("Great"))
+					.observe(change_config_value(20, 3));
+				parent.spawn(make_small_button("Donnie"))
+					.observe(change_config_value(30, 4));
+			});
 			parent
 				.spawn(make_button("Back"))
 				.observe(change_state(GameState::Menu));

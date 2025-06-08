@@ -93,6 +93,7 @@ fn main() {
 			FixedUpdate,
 			(
 				check_game_pause,
+				handle_config_changes,
 				(check_game_over, charge_player_tacos)
 					.chain()
 					.run_if(in_state(GameState::Playing)),
@@ -144,53 +145,10 @@ fn setup_entities(
 	asset_server: Res<AssetServer>,
 	mut meshes: ResMut<Assets<Mesh>>,
 	mut materials: ResMut<Assets<ColorMaterial>>,
-	config: Res<Config>,
 ) {
-	let mut rng = rand::rng();
-
 	// Shadow mesh
 	let mesh_handle = meshes.add(Circle::new(25.));
 	let material_handle = materials.add(Color::hsva(0., 0., 0.2, 0.5));
-
-	// Traders
-	for _ in 0..config.trader_count {
-		commands
-			.spawn((
-				Sprite {
-					image: asset_server.load(investor_texture_path()),
-					custom_size: Some(vec2(50., 50.)),
-					image_mode: SpriteImageMode::Scale(ScalingMode::FitCenter),
-					anchor: bevy::sprite::Anchor::BottomCenter,
-					..Default::default()
-				},
-				Transform {
-					translation: Vec3::new(
-						rng.random_range(-WIDTH..WIDTH),
-						rng.random_range(-HEIGHT..HEIGHT),
-						0.,
-					),
-					..Default::default()
-				},
-				Trader::default(),
-				Collider {
-					radius: 25.,
-					offset: Vec2::new(0., 14.),
-				},
-				PhysicsBody {
-					velocity: get_trader_random_velocity(),
-					..Default::default()
-				},
-				RandomMovement::default(),
-				EdgeBehavior::Wraparound,
-				wobble_animation(),
-				// Shadow
-				children![
-					shadow(mesh_handle.clone(), material_handle.clone()),
-					overhead_text(""),
-				],
-			))
-			.observe(audio::on_trader_status_change);
-	}
 
 	// TODO refactor common stuff?
 	// Donnie
@@ -282,6 +240,69 @@ fn setup_entities(
 	));
 }
 
+fn handle_config_changes(
+	config: Res<Config>,
+	traders: Query<Entity, With<Trader>>,
+	mut cmds: Commands,
+	asset_server: Res<AssetServer>,
+	mut meshes: ResMut<Assets<Mesh>>,
+	mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+	if !config.is_changed() {
+		return;
+	}
+	let target_traders = config.trader_count;
+	error!("Changing traders to {}", target_traders);
+	let current_traders = traders.iter().count();
+
+	if target_traders > current_traders {
+		// Shadow mesh
+		let mesh_handle = meshes.add(Circle::new(25.));
+		let material_handle = materials.add(Color::hsva(0., 0., 0.2, 0.5));
+		// Traders
+		for _ in 0..target_traders - current_traders {
+			cmds.spawn((
+				Sprite {
+					image: asset_server.load(investor_texture_path()),
+					custom_size: Some(vec2(50., 50.)),
+					image_mode: SpriteImageMode::Scale(ScalingMode::FitCenter),
+					anchor: bevy::sprite::Anchor::BottomCenter,
+					..Default::default()
+				},
+				Transform {
+					translation: Vec3::new(
+						rand::random_range(-WIDTH..WIDTH),
+						rand::random_range(-HEIGHT..HEIGHT),
+						0.,
+					),
+					..Default::default()
+				},
+				Trader::default(),
+				Collider {
+					radius: 25.,
+					offset: Vec2::new(0., 14.),
+				},
+				PhysicsBody {
+					velocity: get_trader_random_velocity(),
+				},
+				RandomMovement::default(),
+				EdgeBehavior::Wraparound,
+				wobble_animation(),
+				// Shadow
+				children![
+					shadow(mesh_handle.clone(), material_handle.clone()),
+					overhead_text(""),
+				],
+			))
+			.observe(audio::on_trader_status_change);
+		}
+	} else if target_traders < current_traders {
+		for entity in traders.iter().take(current_traders - target_traders) {
+			cmds.entity(entity).despawn();
+		}
+	}
+}
+
 fn setup_play(
 	mut cmds: Commands,
 	mut next_state: ResMut<NextState<GameState>>,
@@ -354,6 +375,7 @@ fn handle_collisions(
 	rumor: Query<&Rumor>,
 	trader_query: Query<(&Transform, Option<&TraderRestTimer>)>,
 	projectile_query: Query<(&Projectile, &Transform)>,
+	config: Res<Config>,
 ) {
 	for collision in collisions.read() {
 		// TODO cache component gets?
@@ -400,7 +422,9 @@ fn handle_collisions(
 			let hit_direction = (trader_transform.translation.xy()
 				- projectile_transform.translation.xy())
 			.normalize();
-			let pattern = UniformPattern { bullet_count: 3 };
+			let pattern = UniformPattern {
+				bullet_count: config.splits_per_shot as u32,
+			};
 			for dir in pattern.direction_iter(hit_direction) {
 				spawn_events.write(SpawnProjectile {
 					projectile_type: rumor,

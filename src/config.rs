@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use bevy::{ecs::resource::Resource, math::Vec2};
+use bevy::prelude::*;
 
 pub const GAME_NAME: &str = "Donnie's Tacos";
 pub const WIDTH: f32 = 600.;
@@ -30,23 +30,36 @@ pub fn get_trader_random_velocity() -> Vec2 {
 	Vec2::new(angle.cos(), angle.sin()) * rand::random_range(0.5..1.0) * TRADER_MAX_VELOCITY
 }
 
-
 #[derive(Resource)]
 pub struct Config {
-	pub trader_count: u32,
+	pub trader_count: usize,
+	pub splits_per_shot: usize,
 }
 
 impl Default for Config {
 	fn default() -> Self {
-		Self { trader_count: 15 }
+		Self {
+			trader_count: 15,
+			splits_per_shot: 3,
+		}
 	}
 }
 
 impl Config {
 	pub fn price_lowest(&self) -> f32 {
-		(STONKS_PER_BEARISH * self.trader_count) as f32
+		(STONKS_PER_BEARISH as usize * self.trader_count) as f32
 	}
 	pub fn price_highest(&self) -> f32 {
-		(STONKS_PER_BULLISH * self.trader_count) as f32
+		(STONKS_PER_BULLISH as usize * self.trader_count) as f32
+	}
+}
+
+pub fn change_config_value(
+	value: usize,
+	shots: usize,
+) -> impl Fn(Trigger<Pointer<Click>>, ResMut<Config>) {
+	move |_: Trigger<Pointer<Click>>, mut config: ResMut<Config>| {
+		config.trader_count = value;
+		config.splits_per_shot = shots
 	}
 }
