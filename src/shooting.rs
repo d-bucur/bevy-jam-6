@@ -14,15 +14,17 @@ pub struct SpawnProjectile {
 	pub owner: Option<Entity>, // TODO replace with relationship
 }
 
-#[derive(Resource)]
-pub struct DonnieShootingLogic {
+#[derive(Component)]
+pub struct TimedShooter {
 	shooting_timer: Timer,
+	shot_type: Rumor,
 }
 
-impl Default for DonnieShootingLogic {
+impl Default for TimedShooter {
 	fn default() -> Self {
 		Self {
 			shooting_timer: Timer::from_seconds(2.0, TimerMode::Repeating),
+			shot_type: Rumor::Tariff,
 		}
 	}
 }
@@ -67,6 +69,16 @@ impl BulletPattern for UniformPattern {
 			let angle = i as f32 * angle_step;
 			Vec2::from_angle(angle).rotate(reference_dir)
 		})
+	}
+}
+
+pub struct ShootingPlugin {}
+
+impl Plugin for ShootingPlugin {
+	fn build(&self, app: &mut App) {
+		app.add_systems(OnEnter(GameState::Playing), remove_player_auto_shooting)
+			.add_systems(OnExit(GameState::Playing), add_player_auto_shooting)
+			.add_systems(OnEnter(GameState::Menu), add_player_auto_shooting);
 	}
 }
 
@@ -140,46 +152,48 @@ pub fn charge_player_tacos(mut q: Single<&mut PlayerShootingLogic>, time: Res<Ti
 	}
 }
 
-pub fn donnie_shooting(
-	// TODO should combine Donnie with DonnieShootingLogic?
-	mut query: Query<(&Transform, Entity, &mut Sprite), With<Donnie>>,
-	mut shooting_logic: ResMut<DonnieShootingLogic>,
+pub fn handle_timed_shooting(
+	query: Query<(&Transform, Entity, &mut TimedShooter)>,
 	traders_q: Query<&Transform, With<Trader>>,
 	time: Res<Time>,
 	mut spawn_events: EventWriter<SpawnProjectile>,
-	mut overhead_events: EventWriter<OverheadTextRequest>,
-	asset_server: Res<AssetServer>,
 	mut cmds: Commands,
 ) {
-	if !shooting_logic
-		.shooting_timer
-		.tick(time.delta())
-		.just_finished()
-	{
-		return;
-	}
-	use rand::seq::IteratorRandom;
-	let (transform, entity, mut sprite) = query.single_mut().unwrap();
-	let mut rng = rand::rng();
-	let direction = traders_q
-		.iter()
-		.choose(&mut rng)
-		.map(|trader| (trader.translation.xy() - transform.translation.xy()).normalize())
-		.unwrap_or(Vec2::new(0., -1.));
+	for (transform, entity, mut shooter) in query {
+		if !shooter.shooting_timer.tick(time.delta()).just_finished() {
+			continue;
+		}
+		use rand::seq::IteratorRandom;
+		let mut rng = rand::rng();
+		let direction = traders_q
+			.iter()
+			.choose(&mut rng)
+			.map(|trader| (trader.translation.xy() - transform.translation.xy()).normalize())
+			.unwrap_or(Vec2::new(0., -1.));
 
-	spawn_events.write(SpawnProjectile {
-		projectile_type: Rumor::Tariff,
-		position: transform.translation.xy(),
-		direction: direction * PROJECTILE_SPEED,
-		owner: Some(entity),
-	});
+		spawn_events.write(SpawnProjectile {
+			projectile_type: shooter.shot_type,
+			position: transform.translation.xy(),
+			direction: direction * PROJECTILE_SPEED,
+			owner: Some(entity),
+		});
+		cmds.trigger_targets(RumorJustShot, entity);
+	}
+}
+
+pub fn on_donnie_shot(
+	_: Trigger<RumorJustShot>,
+	mut q: Single<(Entity, &mut Sprite), With<Donnie>>,
+	mut overhead_events: EventWriter<OverheadTextRequest>,
+	asset_server: Res<AssetServer>,
+) {
+	let (entity, sprite) = (q.0, &mut q.1);
 	overhead_events.write(OverheadTextRequest {
 		attached_to: entity,
 		text: Some(random_tariff()),
 		duration_sec: Some(1.5),
 	});
 	sprite.image = asset_server.load(donnie_texture_path());
-	cmds.trigger_targets(RumorJustShot, entity);
 }
 
 pub fn spawn_projectiles(
@@ -222,4 +236,15 @@ pub fn spawn_projectiles(
 		));
 		stats.total_projectiles_launched += 1;
 	}
+}
+
+fn remove_player_auto_shooting(player_q: Single<Entity, With<Player>>, mut cmds: Commands) {
+	cmds.entity(player_q.entity()).remove::<TimedShooter>();
+}
+
+fn add_player_auto_shooting(player_q: Single<Entity, With<Player>>, mut cmds: Commands) {
+	cmds.entity(player_q.entity()).insert(TimedShooter {
+		shot_type: Rumor::Taco,
+		..default()
+	});
 }

@@ -68,7 +68,6 @@ fn main() {
 			meta_check: AssetMetaCheck::Never,
 			..default()
 		}))
-		.init_state::<GameState>()
 		.insert_resource(StonksTrading::default())
 		.insert_resource(AssetsBuffer::default())
 		// Enable this part to use inspector
@@ -97,7 +96,7 @@ fn main() {
 					.chain()
 					.run_if(in_state(GameState::Playing)),
 				(
-					donnie_shooting,
+					handle_timed_shooting,
 					spawn_projectiles,
 					process_text_requests,
 					update_texts,
@@ -129,12 +128,13 @@ fn main() {
 		.add_event::<TraderChange>()
 		.add_event::<SpawnProjectile>()
 		.add_event::<OverheadTextRequest>()
-		.insert_resource(DonnieShootingLogic::default())
 		.insert_resource(GameStats::default())
 		.insert_resource(AudioLimitCounters([1, 3, 3, 3]))
 		.insert_resource(VolumeSettings::default())
 		.insert_resource(ClearColor(Color::Srgba(Srgba::hex("6b6a7b").unwrap())))
 		.add_observer(on_stonks_notification)
+		.add_plugins(ShootingPlugin {})
+		.init_state::<GameState>()
 		.run();
 }
 
@@ -218,13 +218,15 @@ fn setup_entities(
 			EdgeBehavior::Wraparound,
 			wobble_animation(),
 			Donnie,
+			TimedShooter::default(),
 			// Shadow
 			children![
 				shadow(mesh_handle.clone(), material_handle.clone()),
 				overhead_text("TARIFFS!"),
 			],
 		))
-		.observe(audio::on_donnie_shot);
+		.observe(audio::on_donnie_shot)
+		.observe(shooting::on_donnie_shot);
 
 	// Taco truck
 	commands
@@ -286,7 +288,6 @@ fn setup_play(
 ) {
 	// Reset game stats
 	cmds.insert_resource(StonksTrading::default());
-	cmds.insert_resource(DonnieShootingLogic::default());
 	cmds.insert_resource(GameStats::default());
 	for e in q.iter() {
 		cmds.entity(e).despawn();
@@ -419,7 +420,7 @@ fn handle_collisions(
 
 fn wobble_animation() -> Animation<Transform> {
 	Animation::<Transform> {
-		progress: rand::random_range(0.0..=1.0),
+		progress: rand::random_range(0.0..=5.0),
 		animation_speed: 10.,
 		animations: vec![
 			AnimValue::new(|t, _, n| t.scale.y = n, |p| (-p * 2.).cos() / 2. * 0.1 + 1.),

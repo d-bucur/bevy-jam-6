@@ -37,6 +37,7 @@ fn setup_main_menu(mut commands: Commands, assets: Res<AssetServer>) {
 					font: assets.load(FONT_MAIN),
 					..default()
 				},
+				TextColor(Color::Srgba(Srgba::hex("ffc107").unwrap())),
 				TextShadow::default(),
 			));
 			parent
@@ -131,8 +132,8 @@ fn apply_button_styles(
 	for (interaction, mut color, mut border_color) in &mut interaction_query {
 		match *interaction {
 			Interaction::Pressed => {
-				*color = PRESSED_BUTTON.into();
-				border_color.0 = RED.into();
+				*color = Srgba::hex("ffc107").unwrap().into();
+				border_color.0 = WHITE.into();
 			}
 			Interaction::Hovered => {
 				*color = HOVERED_BUTTON.into();
