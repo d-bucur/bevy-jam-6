@@ -16,6 +16,7 @@ impl Plugin for MenuPlugin {
 			.add_systems(OnEnter(GameState::Paused), setup_paused)
 			.add_systems(OnEnter(GameState::Options), setup_options)
 			.add_systems(OnEnter(GameState::Screensaver), setup_screensaver)
+			.add_systems(OnEnter(GameState::Tutorial), setup_tutorial)
 			.add_systems(Update, apply_button_styles);
 	}
 }
@@ -44,9 +45,9 @@ fn setup_main_menu(mut commands: Commands, assets: Res<AssetServer>) {
 			parent
 				.spawn(make_button("Options"))
 				.observe(change_state(GameState::Options));
-			// parent
-			// 	.spawn(make_button("Tutorial"))
-			// 	.observe(change_state(GameState::Tutorial));
+			parent
+				.spawn(make_button("Tutorial"))
+				.observe(change_state(GameState::Tutorial));
 			parent
 				.spawn(make_button("Screensaver"))
 				.observe(change_state(GameState::Screensaver));
@@ -308,6 +309,63 @@ fn setup_screensaver(mut commands: Commands) {
 		.with_children(|parent| {
 			parent
 				.spawn(make_small_button("Back"))
+				.observe(change_state(GameState::Menu));
+		});
+}
+
+fn setup_tutorial(mut commands: Commands) {
+	commands
+		.spawn((
+			Node {
+				position_type: PositionType::Absolute,
+				width: Val::Percent(100.0),
+				height: Val::Percent(100.0),
+				align_items: AlignItems::Center,
+				justify_content: JustifyContent::Center,
+				flex_direction: FlexDirection::Column,
+				padding: UiRect::horizontal(Val::Px(200.))
+					.with_bottom(Val::Px(50.))
+					.with_top(Val::Px(50.)),
+				row_gap: Val::Px(20.0),
+				..default()
+			},
+			// Don't block picking events for other UI roots.
+			Pickable::IGNORE,
+			GlobalZIndex(2),
+			StateScoped(GameState::Tutorial),
+		))
+		.with_children(|parent| {
+			parent.spawn((
+				Node {
+					position_type: PositionType::Relative,
+					width: Val::Percent(100.0),
+					height: Val::Percent(100.0),
+					align_items: AlignItems::Center,
+					justify_content: JustifyContent::Center,
+					flex_direction: FlexDirection::Column,
+					padding: UiRect::all(Val::Px(50.)),
+					// margin: UiRect::horizontal(Val::Px(200.)),
+					row_gap: Val::Px(20.0),
+					flex_grow: 9000.,
+					flex_basis: Val::Percent(100.),
+					..default()
+				},
+				BorderRadius::all(Val::Px(20.)),
+				BackgroundColor(bevy::color::palettes::css::BLACK.with_alpha(0.8).into()),
+				children![(
+					Text::new(
+						"Donnie launches rumors of tariffs that scare traders and make them BEARISH. This makes stonks go down as they spread in a chain reaction.\nUse the MOUSE to aim TACOs and CLICK to shoot them. TACOs make traders BULLISH again and stonks go up.\nYou have a maximum of 3 TACOs and they slowly recharge.\nThe stonk market alternates between BUY and SELL phases. Press SPACE to buy when stonks are down and SPACE again to sell for a profit.\nMake as much profit as you can in 1 minute rounds!"
+					),
+					TextFont {
+						font_size: 15.0,
+						..default()
+					},
+					TextColor(Color::WHITE),
+					TextShadow::default(),
+				)],
+			));
+			parent
+				.spawn(make_button("Menu"))
 				.observe(change_state(GameState::Menu));
 		});
 }
