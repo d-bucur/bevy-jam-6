@@ -56,7 +56,7 @@ pub const TARIFF_TARGETS: [&str; 12] = [
 	"ITCH.IO",
 ];
 
-pub const ENDING_SARCASM: [&str; 9] = [
+pub const ENDING_SARCASM: [&str; 10] = [
 	"Don't you just love the free market?",
 	"So are your friends who knew about it in advance.",
 	"And 10x morally poorer.",
@@ -66,9 +66,10 @@ pub const ENDING_SARCASM: [&str; 9] = [
 	"Trade pertners respect us so much.",
 	"much deal very respect so amaze",
 	"Hope this doesn't break any bromance.",
+	"You can now afford a carton of eggs.",
 ];
 
-pub fn random_string(a: &[&'static str]) -> &'static str {
+pub fn random_string<T: Copy>(a: &[T]) -> T {
 	let mut rng = rand::rng();
 	let idx = rng.random_range(..a.len());
 	a[idx]

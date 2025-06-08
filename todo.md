@@ -1,7 +1,6 @@
 # polish
 - font and promo image
 - bug with some audio file: `Result::unwrap()` on an `Err` value: UnrecognizedFormat
-- individual volume levels for sounds (especially voice)
 
 # optional
 - interactive tutorial

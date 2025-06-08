@@ -25,6 +25,7 @@ pub struct CollisionEvent {
 	pub entity2: Entity,
 }
 
+// TODO should add spatial hashing broad phase
 pub fn check_collisions(
 	mut query: Query<(
 		&mut PhysicsBody,
@@ -39,21 +40,22 @@ pub fn check_collisions(
 	while let Some([mut e1, mut e2]) = combinations.fetch_next() {
 		let axis = (e1.2.translation.xy() + e1.1.offset) - (e2.2.translation.xy() + e2.1.offset);
 		let radii = e1.1.radius + e2.1.radius;
-		if axis.length() < radii {
-			// handle collision
-			collisions.write(CollisionEvent {
-				entity1: e1.3,
-				entity2: e2.3,
-			});
-			if e1.4.is_some() || e2.4.is_some() {
-				// one is trigger, avoid displacement
-				continue;
-			}
-			// simple displacement to resolve collision
-			let penetration = (radii - axis.length()) * axis.normalize();
-			e1.2.translation += (penetration * 0.5).extend(0.);
-			e2.2.translation -= (penetration * 0.5).extend(0.);
+		if axis.length() >= radii {
+			continue;
 		}
+		// handle collision
+		collisions.write(CollisionEvent {
+			entity1: e1.3,
+			entity2: e2.3,
+		});
+		if e1.4.is_some() || e2.4.is_some() {
+			// one is trigger, avoid displacement
+			continue;
+		}
+		// simple displacement to resolve collision
+		let penetration = (radii - axis.length()) * axis.normalize();
+		e1.2.translation += (penetration * 0.5).extend(0.);
+		e2.2.translation -= (penetration * 0.5).extend(0.);
 	}
 }
 
