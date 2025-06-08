@@ -200,13 +200,16 @@ pub fn ui_update(
 	mut gizmos: Gizmos,
 	mut gizmos_dotted: Gizmos<DottedGizmoConfig>,
 	stonks: Res<StonksTrading>,
+	config: Res<Config>,
 ) {
 	use bevy::color::palettes::css::*;
 	const HUE_MAX: f32 = 123.;
 
-	fn price_ratio(v: u32) -> f32 {
-		(v as f32 - PRICE_LOWEST) / (PRICE_HIGHEST - PRICE_LOWEST)
-	}
+	let price_lowest = config.price_lowest();
+	let price_highest = config.price_highest();
+	let price_ratio = |v| {
+		(v as f32 - price_lowest) / (price_highest - price_lowest)
+	};
 
 	// level border
 	gizmos_dotted.rect_2d(

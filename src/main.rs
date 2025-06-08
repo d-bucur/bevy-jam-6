@@ -70,6 +70,7 @@ fn main() {
 		}))
 		.insert_resource(StonksTrading::default())
 		.insert_resource(AssetsBuffer::default())
+		.insert_resource(Config::default())
 		// Enable this part to use inspector
 		// .add_plugins(EguiPlugin {
 		// 	enable_multipass_for_primary_context: true,
@@ -143,6 +144,7 @@ fn setup_entities(
 	asset_server: Res<AssetServer>,
 	mut meshes: ResMut<Assets<Mesh>>,
 	mut materials: ResMut<Assets<ColorMaterial>>,
+	config: Res<Config>,
 ) {
 	let mut rng = rand::rng();
 
@@ -151,7 +153,7 @@ fn setup_entities(
 	let material_handle = materials.add(Color::hsva(0., 0., 0.2, 0.5));
 
 	// Traders
-	for _ in 0..TRADER_COUNT {
+	for _ in 0..config.trader_count {
 		commands
 			.spawn((
 				Sprite {

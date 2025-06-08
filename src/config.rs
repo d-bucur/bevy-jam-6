@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use bevy::math::Vec2;
+use bevy::{ecs::resource::Resource, math::Vec2};
 
 pub const GAME_NAME: &str = "Donnie's Tacos";
 pub const WIDTH: f32 = 600.;
@@ -14,7 +14,6 @@ pub const STONKS_PER_BULLISH: u32 = 7;
 pub const STONKS_DATA_POINTS: u32 = 300;
 pub const STONKS_PER_BUY_ACTION: u32 = 300;
 
-pub const TRADER_COUNT: u32 = 15;
 pub const PROJECTILE_SPEED: f32 = 7.;
 pub const MOVEMENT_TIME: f32 = 5.;
 pub const IDLE_TIME: f32 = 1.;
@@ -31,6 +30,23 @@ pub fn get_trader_random_velocity() -> Vec2 {
 	Vec2::new(angle.cos(), angle.sin()) * rand::random_range(0.5..1.0) * TRADER_MAX_VELOCITY
 }
 
-// computed from above
-pub const PRICE_LOWEST: f32 = (STONKS_PER_BEARISH * TRADER_COUNT) as f32;
-pub const PRICE_HIGHEST: f32 = (STONKS_PER_BULLISH * TRADER_COUNT) as f32;
+
+#[derive(Resource)]
+pub struct Config {
+	pub trader_count: u32,
+}
+
+impl Default for Config {
+	fn default() -> Self {
+		Self { trader_count: 15 }
+	}
+}
+
+impl Config {
+	pub fn price_lowest(&self) -> f32 {
+		(STONKS_PER_BEARISH * self.trader_count) as f32
+	}
+	pub fn price_highest(&self) -> f32 {
+		(STONKS_PER_BULLISH * self.trader_count) as f32
+	}
+}

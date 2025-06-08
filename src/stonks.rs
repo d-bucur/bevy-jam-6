@@ -41,6 +41,7 @@ pub fn update_stonks_price(
 	mut stonks: ResMut<StonksTrading>,
 	query: Query<&Trader>,
 	mut cmds: Commands,
+	config: Res<Config>,
 ) {
 	let counts = query
 		.iter()
@@ -61,7 +62,7 @@ pub fn update_stonks_price(
 	let price_prev = *stonks.price_history.back().unwrap_or(&0);
 	stonks.price_history.push_back(price_current);
 
-	let (low, high) = notif_thresholds();
+	let (low, high) = notif_thresholds(config);
 	if price_current <= low && price_prev > low {
 		cmds.trigger(StonksPriceNotification::LOW);
 	}
@@ -70,12 +71,13 @@ pub fn update_stonks_price(
 	}
 }
 
-const fn notif_thresholds() -> (u32, u32) {
+fn notif_thresholds(config: Res<Config>) -> (u32, u32) {
 	const NOTIF_THRESHOLD: f32 = 0.7;
-	const DIFF: f32 = PRICE_HIGHEST - PRICE_LOWEST;
+	let price_lowest = config.price_lowest();
+	let diff: f32 = config.price_highest() - price_lowest;
 	(
-		(DIFF * (1. - NOTIF_THRESHOLD) + PRICE_LOWEST) as u32,
-		(DIFF * NOTIF_THRESHOLD + PRICE_LOWEST) as u32,
+		(diff * (1. - NOTIF_THRESHOLD) + price_lowest) as u32,
+		(diff * NOTIF_THRESHOLD + price_lowest) as u32,
 	)
 }
 
