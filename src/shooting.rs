@@ -86,8 +86,11 @@ pub fn player_shooting(
 	// draw shooting line
 	let touches = touch_res.iter().collect::<Vec<_>>();
 	let target_pos_viewport = if !touches.is_empty() {
-		// touch
+		// touch ongoing
 		touches[0].position()
+	} else if touch_res.any_just_released() {
+		// touch just released
+		touch_res.iter_just_released().next().unwrap().position()
 	} else if let Some(cursor) = window.cursor_position() {
 		// mouse
 		cursor
