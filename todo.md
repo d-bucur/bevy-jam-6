@@ -5,8 +5,9 @@
 
 # optional
 - interactive tutorial
-- craziness/chaos level
+- auto taco shooting in menu
 - mobile controls
+- craziness/chaos level
 - dialogue frequency in options
 
 # cut

@@ -296,7 +296,7 @@ fn setup_screensaver(mut commands: Commands) {
 				align_items: AlignItems::Start,
 				justify_content: JustifyContent::Start,
 				flex_direction: FlexDirection::Row,
-				padding: UiRect::vertical(Val::Px(50.)),
+				padding: UiRect::vertical(Val::Px(20.)),
 				row_gap: Val::Px(20.0),
 				..default()
 			},
@@ -361,7 +361,7 @@ fn setup_tutorial(mut commands: Commands) {
 						..default()
 					},
 					TextColor(Color::WHITE),
-					TextShadow::default(),
+					// TextShadow::default(),
 				)],
 			));
 			parent

@@ -54,7 +54,7 @@ impl Default for GameStats {
 	fn default() -> Self {
 		Self {
 			total_projectiles_launched: 0,
-			time_remaining: Timer::from_seconds(60., TimerMode::Once),
+			time_remaining: Timer::from_seconds(ROUND_TIME, TimerMode::Once),
 		}
 	}
 }

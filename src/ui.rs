@@ -300,7 +300,7 @@ pub fn ui_setup_gameover_screen(mut commands: Commands, stonks: Res<StonksTradin
 				align_items: AlignItems::Center,
 				justify_content: JustifyContent::Center,
 				flex_direction: FlexDirection::Column,
-				padding: UiRect::vertical(Val::Px(200.)),
+				padding: UiRect::vertical(Val::Px(50.)),
 				row_gap: Val::Px(20.0),
 				..default()
 			},
@@ -311,19 +311,45 @@ pub fn ui_setup_gameover_screen(mut commands: Commands, stonks: Res<StonksTradin
 		))
 		.with_children(|parent| {
 			parent.spawn((
-				Text::new("Congratulations!\nYou are now richer by"),
-				TextLayout {
-					justify: JustifyText::Center,
+				Node {
+					position_type: PositionType::Relative,
+					width: Val::Percent(75.0),
+					height: Val::Percent(100.0),
+					align_items: AlignItems::Center,
+					justify_content: JustifyContent::Center,
+					flex_direction: FlexDirection::Column,
+					padding: UiRect::all(Val::Px(50.)),
+					row_gap: Val::Px(20.0),
+					flex_grow: 9000.,
+					flex_basis: Val::Percent(100.),
 					..default()
 				},
-			));
-			parent.spawn((
-				Text::new(format!("${}", separated_number(stonks.returns_total))),
-				TextFont {
-					font_size: 100.,
-					..default()
-				},
-				TextShadow::default(),
+				BorderRadius::all(Val::Px(20.)),
+				BackgroundColor(bevy::color::palettes::css::BLACK.with_alpha(0.8).into()),
+				children![
+					(
+						Text::new("Congratulations! You are now richer by"),
+						TextLayout {
+							justify: JustifyText::Center,
+							..default()
+						},
+					),
+					(
+						Text::new(format!("${}", separated_number(stonks.returns_total))),
+						TextFont {
+							font_size: 100.,
+							..default()
+						},
+						TextShadow::default(),
+					),
+					(
+						Text::new(random_string(&ENDING_SARCASM)),
+						TextLayout {
+							justify: JustifyText::Center,
+							..default()
+						},
+					)
+				],
 			));
 			parent
 				.spawn(make_button("Restart"))
